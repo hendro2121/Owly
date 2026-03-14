@@ -383,9 +383,9 @@ async def get_companies(sector: Optional[str]=None, include_delisted: bool=False
 
 @app.post("/api/refresh")
 async def refresh_endpoint(
-    period: str = Query("week", pattern="^(week|month|3months|ytd|6months|1year)$"),
+    period: str = Query("1year", pattern="^(week|month|3months|ytd|6months|1year)$"),
     secret: str = Query(..., description="CRON_SECRET to authorize refresh"),
-    clear: bool = Query(False, description="Clear existing deals before refresh"),
+    clear: bool = Query(True, description="Clear existing deals before refresh"),
 ):
     """
     Trigger a Moneyweb SENS scrape. Protected by CRON_SECRET env var.
