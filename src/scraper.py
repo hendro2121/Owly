@@ -32,6 +32,7 @@ from typing import Optional
 from urllib.parse import urljoin, urlparse
 
 import requests
+import cloudscraper
 from bs4 import BeautifulSoup
 
 from companies import JSE_TOP_40
@@ -104,7 +105,7 @@ class ScraperStrategy(ABC):
     """Base class for company-specific scraper strategies."""
 
     def __init__(self):
-        self.session = requests.Session()
+        self.session = cloudscraper.create_scraper()
         self.session.headers.update(HEADERS)
         self._last_request_time = {}  # per-domain throttle
 
