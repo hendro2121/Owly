@@ -274,6 +274,10 @@ PERIODS = {
     "ytd":     None,   # calculated dynamically
     "6months": 180,
     "1year":   365,
+    "2years":  730,
+    "3years":  1095,
+    "5years":  1825,
+    "all":     3650,   # ~10 years — effectively everything Moneyweb has
 }
 
 
@@ -450,9 +454,10 @@ if __name__ == "__main__":
 
     # Time period (for Moneyweb)
     ap.add_argument("--period", choices=["week", "month", "3months", "ytd",
-                                          "6months", "1year"],
-                    default="month",
-                    help="Time period to scrape (default: month)")
+                                          "6months", "1year", "2years",
+                                          "3years", "5years", "all"],
+                    default="1year",
+                    help="Time period to scrape (default: 1year)")
 
     # Filters
     ap.add_argument("--ticker", "-t", help="Process specific ticker(s), comma-separated")

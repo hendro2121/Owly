@@ -51,47 +51,103 @@ class ParsedDeal:
 
 
 # ─── Regex Patterns ──────────────────────────────────────────────────────────
-# These patterns match the standard SENS format for director dealings.
-# The format is semi-structured free text, not XML, so we use flexible patterns.
+# These patterns cover the wide variety of SENS announcement formats seen
+# across JSE companies. Formats vary from UPPERCASE labels (Argent style)
+# to Title Case with colons (Lighthouse, Grindrod, NEPI), with currency
+# prefixes of R, ZAR, or neither.
 
 PATTERNS = {
     "director_name": [
-        r"(?:Name(?:\s+of\s+director)?|Director)\s*[:\-]\s*(.+?)(?:\n|$)",
-        r"(?:^|\n)\s*(?:A\)|B\)|C\)|D\)|1\.|2\.|3\.|4\.)\s*Name\s*[:\-]?\s*(.+?)(?:\n|$)",
+        # MOST SPECIFIC patterns first (longer matches before shorter)
+
+        # "Name of director and relationship to associate: Desmond de Beer is a beneficiary..."
+        # Extract just the person name (before "is a" / "is the" / "," / "who")
+        r"(?:Name\s+of\s+director\s+and\s+relationship\s+to\s+associate)\s*[:\-]?\s*([A-Z][a-z]+(?:\s+(?:de\s+|van\s+|der\s+|le\s+|du\s+)?[A-Za-z]+)*?)(?:\s+is\s+|\s*,|\s+who\s+)",
+        # "Name of director : John Smith" / "NAME OF DIRECTOR  John Smith"
+        # Negative lookahead: don't match "Name of director and relationship"
+        r"(?:Name\s+of\s+(?:the\s+)?(?:director|executive\s+director))(?!\s+and\s+relationship)\s*[:\-]?\s*(.+?)(?:\n|$)",
+        # "Director : Mark Sorour" / "Director  Mark Sorour"
+        r"(?:^|\n)\s*Director\s*[:\-]\s*(.+?)(?:\n|$)",
+        # "Name: John Smith" (Grindrod style — simple "Name:")
+        r"(?:^|\n)\s*Name\s*[:\-]\s+(.+?)(?:\n|$)",
+        # "NAME OF DIRECTOR  John Smith" (Argent uppercase)
+        r"NAME\s+OF\s+DIRECTOR\s+(.+?)(?:\n|$)",
+        # "A) Name: PIETER" / "B) Name: ANTON" / "1. Name: PIETER"
+        r"(?:^|\n)\s*(?:[A-Z]\)|[0-9]+[\.\)])\s*Name\s*[:\-]?\s*(.+?)(?:\n|$)",
+        # "Name of associate : Delsa Investments" (Lighthouse style — fallback for associate)
+        r"(?:Name\s+of\s+associate(?:\s*/\s*person\s+closely\s+associated)?)\s*[:\-]?\s*(.+?)(?:\n|$)",
     ],
     "role": [
-        r"(?:Office\s+Held|Designation|Position|Capacity)\s*[:\-]\s*(.+?)(?:\n|$)",
+        r"(?:Office\s+[Hh]eld|Designation|Position|Capacity|Role)\s*[:\-]\s*(.+?)(?:\n|$)",
+        r"(?:STATUS\s*:\s*EXECUTIVE\s*/\s*NON[- ]EXECUTIVE)\s*(.+?)(?:\n|$)",
+        r"(?:Company\s+of\s+which\s+a\s+director)\s*(.+?)(?:\n|$)",
     ],
     "transaction_date": [
-        r"(?:Date\s+(?:of\s+)?transaction(?:s)?\s+effected|Date\s+transaction\s+effected|Transaction\s+date)\s*[:\-]?\s*(.+?)(?:\n|$)",
-        r"(?:Date\s+of\s+(?:the\s+)?transaction)\s*[:\-]?\s*(.+?)(?:\n|$)",
+        # "Date of transaction : 12 March 2026" / "DATE OF TRANSACTION  12 March 2026"
+        r"(?:Date\s+(?:of\s+)?(?:the\s+)?transaction(?:s)?(?:\s+effected)?)\s*[:\-]?\s*(.+?)(?:\n|$)",
+        # "Transaction date : 11 March 2026"
+        r"(?:Transaction\s+date)\s*[:\-]?\s*(.+?)(?:\n|$)",
+        # "DATE OF TRANSACTION" (uppercase, Argent)
+        r"DATE\s+OF\s+TRANSACTION\s+(.+?)(?:\n|$)",
     ],
     "transaction_type": [
-        r"(?:Nature\s+of\s+transactions?)\s*[:\-]\s*(.+?)(?:\n|$)",
-        r"(?:Type\s+of\s+transaction)\s*[:\-]\s*(.+?)(?:\n|$)",
+        # "Nature of transaction : On-market purchase" / "NATURE OF TRANSACTION  Purchase"
+        r"(?:Nature\s+of\s+transaction(?:s)?)\s*[:\-]?\s*(.+?)(?:\n|$)",
+        r"(?:Type\s+of\s+transaction)\s*[:\-]?\s*(.+?)(?:\n|$)",
+        r"NATURE\s+OF\s+TRANSACTION\s+(.+?)(?:\n|$)",
     ],
     "shares": [
-        r"(?:Number\s+of\s+(?:shares|securities)(?:\s+(?:purchased|sold|disposed))?)\s*[:\-]?\s*([\d\s,]+)",
-        r"([\d,\s]+)\s+(?:ordinary\s+)?shares",
+        # "Number of securities : 992 906" / "NUMBER OF SECURITIES TRANSACTED  1,200"
+        r"(?:Number\s+of\s+(?:(?:ordinary\s+)?shares|securities)(?:\s*/\s*volume)?(?:\s+(?:purchased|sold|disposed|transacted))?)\s*[:\-]?\s*([\d\s,]+)",
+        r"NUMBER\s+OF\s+SECURITIES\s+TRANSACTED\s+([\d\s,]+)",
+        # fallback: "1,200 ordinary shares"
+        r"([\d,\s]+)\s+(?:ordinary\s+)?(?:shares|securities)",
     ],
     "price": [
-        r"(?:Volume\s+weighted\s+average\s+(?:purchase\s+)?price(?:\s+per\s+(?:share|security))?)\s*[:\-]?\s*R?\s*([\d\s,\.]+)",
-        r"(?:(?:Average\s+)?[Pp]rice\s+per\s+(?:share|security))\s*[:\-]?\s*R?\s*([\d\s,\.]+)",
+        # "Volume weighted average price per security : R17.2004" / "Weighted average price per security: ZAR 7.9037"
+        r"(?:(?:Volume\s+)?[Ww]eighted\s+average\s+(?:purchase\s+)?price(?:\s+per\s+(?:share|security))?)\s*[:\-]?\s*(?:R|ZAR)?\s*([\d\s,\.]+)",
+        # "Average price per share : R4,003.47" / "Price per share: R33.11" / "PRICE PER SECURITY R33.11"
+        r"(?:(?:Average\s+)?[Pp]rice\s+per\s+(?:share|security))\s*[:\-]?\s*(?:R|ZAR)?\s*([\d\s,\.]+)",
+        r"PRICE\s+PER\s+SECURITY\s+(?:R|ZAR)?\s*([\d\s,\.]+)",
+        # "Price per security : ZAR 134.00"
+        r"(?:Price\s+per\s+security)\s*[:\-]?\s*(?:R|ZAR)?\s*([\d\s,\.]+)",
+        # "Deemed market price per share" (Gold Fields — value may be on next line)
+        r"(?:Deemed\s+market\s+price\s+per\s+share)\s*[:\-]?\s*(?:R|ZAR)?\s*([\d\s,\.]+)",
     ],
     "value": [
-        r"(?:(?:Total\s+)?[Vv]alue\s+of\s+(?:the\s+)?transaction)\s*[:\-]?\s*R?\s*([\d\s,\.]+)",
+        # "Total value : ZAR 7 847 631.15" / "Total value: R286 679.07"
+        r"(?:Total\s+value(?:\s+of\s+(?:the\s+)?(?:transaction|securities))?)\s*[:\-]?\s*(?:R|ZAR)?\s*([\d\s,\.]+)",
+        # "TOTAL RAND VALUE OF SECURITIES TRANSACTED  R39,732"
+        r"TOTAL\s+RAND\s+VALUE\s+OF\s+SECURITIES\s+(?:TRANSACTED\s+)?(?:R|ZAR)?\s*([\d\s,\.]+)",
+        # "Value of the transaction : R10,568,357.02"
+        r"(?:(?:Total\s+)?[Vv]alue\s+of\s+(?:the\s+)?transaction(?:\s*\d)?)\s*[:\-]?\s*(?:R|ZAR)?\s*([\d\s,\.]+)",
+        # "Deemed market value : R51,721,659.78"
+        r"(?:Deemed\s+market\s+value)\s*[:\-]?\s*(?:R|ZAR)?\s*([\d\s,\.]+)",
+        # "Total rand value" / "Total cost"
+        r"(?:Total\s+(?:rand\s+)?(?:value|cost))\s*[:\-]?\s*(?:R|ZAR)?\s*([\d\s,\.]+)",
     ],
     "class_of_securities": [
-        r"(?:Class\s+of\s+(?:shares|securities))\s*[:\-]\s*(.+?)(?:\n|$)",
+        r"(?:(?:Type\s+and\s+)?[Cc]lass\s+of\s+(?:shares|securities)(?:\s*/\s*description[^:]*)?)\s*[:\-]?\s*(.+?)(?:\n|$)",
+        r"TYPE\s+AND\s+CLASS\s+OF\s+SECURITIES\s+(.+?)(?:\n|$)",
     ],
     "nature_of_interest": [
+        # "Nature and extent of director's interest : Indirect beneficial"
+        r"(?:Nature\s+and\s+extent\s+of\s+(?:director'?s?\s+)?interest(?:\s+in\s+the\s+transaction)?)\s*[:\-]?\s*(.+?)(?:\n|$)",
+        # "Extent of interest : Direct beneficial"
+        r"(?:Extent\s+of\s+interest)\s*[:\-]?\s*(.+?)(?:\n|$)",
+        # "Interest : Direct beneficial" / "NATURE AND EXTENT OF INTEREST"
         r"(?:(?:Nature\s+of\s+)?[Ii]nterest)\s*[:\-]\s*(.+?)(?:\n|$)",
-        r"^Interest\s*[:\-]\s*(.+?)(?:\n|$)",
+        r"NATURE\s+AND\s+EXTENT\s+OF\s+INTEREST\s+IN\s+THE\s+TRANSACTION\s+(.+?)(?:\n|$)",
     ],
     "clearance": [
-        r"(?:Written\s+clearance\s+to\s+deal\s+(?:received|obtained))\s*[:\-]?\s*(.+?)(?:\n|$)",
-        r"(?:Clearance\s+to\s+deal)\s*[:\-]?\s*(.+?)(?:\n|$)",
+        # "Clearance to deal obtained : Yes" / "Clearance to deal received : Yes"
+        r"(?:Clearance\s+to\s+deal\s+(?:received|obtained))\s*[:\-]?\s*(.+?)(?:\n|$)",
+        # "Clearance obtained : Yes" / "Clearance received : Yes"
         r"(?:Clearance\s+(?:received|obtained))\s*[:\-]?\s*(.+?)(?:\n|$)",
+        # "Written clearance to deal received : Yes"
+        r"(?:Written\s+clearance\s+to\s+deal\s+(?:received|obtained))\s*[:\-]?\s*(.+?)(?:\n|$)",
+        # "CLEARANCE TO DEAL OBTAINED  Yes"
+        r"CLEARANCE\s+TO\s+DEAL\s+(?:RECEIVED|OBTAINED)\s+(.+?)(?:\n|$)",
     ],
 }
 
@@ -99,28 +155,43 @@ PATTERNS = {
 # ─── Helper Functions ────────────────────────────────────────────────────────
 
 def clean_number(text: str) -> Optional[float]:
-    """Parse a number from text like '48,031,250.00' or '48 031 250'."""
+    """
+    Parse a number from text like '48,031,250.00', '48 031 250', '7 847 631.15'.
+    Handles both comma and space as thousands separators.
+    """
     if not text:
         return None
-    cleaned = re.sub(r'[^\d.]', '', text.replace(' ', '').replace(',', ''))
+    # Remove currency prefix
+    text = re.sub(r'^[R\s]+|^ZAR\s*', '', text.strip())
+    # If there's a decimal point, preserve it; remove all other non-digit chars
+    # But first handle space-as-thousands (e.g., "7 847 631.15")
+    # Detect if spaces are thousands separators: "7 847 631" vs unrelated whitespace
+    if '.' in text:
+        # Has decimal: "7 847 631.15" -> "7847631.15"
+        cleaned = re.sub(r'[\s,]', '', text)
+    else:
+        # No decimal: "992 906" or "39,732" -> remove space/comma
+        cleaned = re.sub(r'[\s,]', '', text)
     try:
-        return float(cleaned) if '.' in cleaned else float(cleaned)
+        return float(cleaned)
     except (ValueError, TypeError):
         return None
 
 
 def clean_int(text: str) -> Optional[int]:
-    """Parse an integer from text like '12,500' or '12 500'."""
+    """Parse an integer from text like '12,500' or '12 500' or '992 906'."""
     val = clean_number(text)
     return int(val) if val is not None else None
 
 
 def parse_date(text: str) -> Optional[str]:
     """Try to parse a date string into YYYY-MM-DD format."""
-    import re
     from datetime import datetime
 
     text = text.strip()
+    # Remove trailing junk like ")" or extra text after the date
+    text = re.sub(r'\s*\(.*$', '', text)
+    text = re.sub(r'\s+and\s+.*$', '', text, flags=re.IGNORECASE)
 
     # Try common formats
     formats = [
@@ -130,6 +201,7 @@ def parse_date(text: str) -> Optional[str]:
         "%d/%m/%Y",          # 25/03/2024
         "%d %B, %Y",        # 25 March, 2024
         "%B %d, %Y",        # March 25, 2024
+        "%d %B%Y",          # 25 March2024 (no space — OCR artifact)
     ]
 
     for fmt in formats:
@@ -161,7 +233,8 @@ def classify_transaction(text: str) -> str:
         "restricted share plan", "rsp award", "conditional share plan",
         "csp award", "vesting of", "shares vested", "share award",
         "forfeitable share", "conditional share rights",
-        "share appreciation right",
+        "share appreciation right", "share matching scheme",
+        "acceptance of conditional",
     ]
 
     for kw in tax_sale_keywords:
@@ -173,17 +246,19 @@ def classify_transaction(text: str) -> str:
 
     # Discretionary transactions
     sell_keywords = ["sale", "sold", "disposal", "selling", "on-market disposal",
-                     "on market disposal", "on-market sale"]
+                     "on market disposal", "on-market sale", "on market sale",
+                     "off-market sale", "off market sale"]
     buy_keywords = ["purchase", "purchased", "bought", "acquisition",
                     "on-market purchase", "on market purchase",
-                    "shares purchased"]
+                    "on-market acquisition", "on market acquisition",
+                    "shares purchased", "off-market purchase", "off market purchase"]
 
-    for kw in sell_keywords:
-        if kw in lower:
-            return "Sell"
     for kw in buy_keywords:
         if kw in lower:
             return "Buy"
+    for kw in sell_keywords:
+        if kw in lower:
+            return "Sell"
     return "Unknown"
 
 
@@ -213,7 +288,7 @@ class RegexParser:
                 return match.group(1).strip()
         return None
 
-    def _extract_all(self, text: str, field: str) -> list[str]:
+    def _extract_all(self, text: str, field: str) -> list:
         """Extract ALL matches for a field (for multi-transaction announcements)."""
         results = []
         for pattern in PATTERNS.get(field, []):
@@ -225,37 +300,79 @@ class RegexParser:
                 break  # Use first pattern that matches
         return results
 
-    def _split_multiple_directors(self, text: str) -> list[str]:
+    def _split_into_blocks(self, text: str) -> list:
         """
-        Some announcements contain multiple directors in one filing.
-        Split on patterns like 'A) Name:', 'B) Name:', '1. Name:', etc.
+        Split a SENS announcement into individual dealing blocks.
+
+        Handles multiple formats:
+        1. "A) Name:", "B) Name:" lettered sections
+        2. "1. Name:", "2. Name:" numbered sections
+        3. Repeated "Name:" or "Name of director:" blocks
+        4. Repeated "Transaction date:" blocks (multiple txns for same director)
         """
-        # Try to find numbered/lettered sections
-        sections = re.split(
-            r'(?:^|\n)\s*(?:[A-Z]\)|[0-9]+[\.\)])\s*Name\s*[:\-]',
+        # Strategy 1: Split on lettered/numbered sections "A) Name:", "1. Name:"
+        lettered = re.split(
+            r'(?:^|\n)\s*(?:[A-Z]\)|[0-9]+[\.\)])\s*(?:Name)\s*[:\-]',
             text, flags=re.IGNORECASE | re.MULTILINE
         )
+        if len(lettered) > 1:
+            return lettered[1:]  # First is header
 
-        if len(sections) > 1:
-            # First section is the header, rest are individual directors
-            return sections[1:]
+        # Strategy 2: Split on repeated "Name of director:" or "Name:" blocks
+        # Look for lines where a new director block starts
+        name_pattern = (
+            r'(?=\n\s*(?:'
+            r'Name\s+of\s+(?:the\s+)?(?:director|associate|executive)'
+            r'|Name\s*:'
+            r'|NAME\s+OF\s+DIRECTOR'
+            r')\s*)'
+        )
+        blocks = re.split(name_pattern, text, flags=re.IGNORECASE)
+        blocks = [b.strip() for b in blocks if b.strip()]
 
+        if len(blocks) > 1:
+            # Check if the first block is just a header (no name match)
+            first_has_name = bool(self._extract(blocks[0], "director_name"))
+            if not first_has_name and len(blocks) > 1:
+                # Merge header with first real block as common context
+                return blocks[1:]
+            return blocks
+
+        # Strategy 3: Return as single block
         return [text]
 
-    def _split_transactions(self, text: str) -> list[str]:
+    def _split_transactions(self, text: str) -> list:
         """
         Split a section into multiple transaction blocks when the same
         director has multiple transactions (repeated Date of transaction fields).
 
-        e.g. Discovery example with transactions on 9 March and 10 March.
+        e.g. Discovery example with transactions on 9 March and 10 March,
+        or Lighthouse with multiple purchase dates.
+
+        Only splits if there are 2+ date entries — a single "Date of transaction"
+        should NOT cause a split (it would separate Nature from Shares).
         """
-        # Split on "Date of transaction" / "Date transaction effected" lines
-        date_pattern = r'(?=(?:Date\s+(?:of\s+)?transaction(?:s)?\s*(?:effected)?\s*[:\-]))'
+        # Count date occurrences first
+        date_count_pattern = r'(?:Date\s+(?:of\s+)?(?:the\s+)?transaction|Transaction\s+date|DATE\s+OF\s+TRANSACTION)\s*[:\-]?'
+        dates_found = re.findall(date_count_pattern, text, re.IGNORECASE)
+
+        if len(dates_found) < 2:
+            return [text]  # Only one or zero dates — don't split
+
+        # Split on the second and subsequent date lines
+        date_pattern = r'(?=\n\s*(?:Date\s+(?:of\s+)?(?:the\s+)?transaction|Transaction\s+date|DATE\s+OF\s+TRANSACTION)\s*[:\-]?)'
         parts = re.split(date_pattern, text, flags=re.IGNORECASE)
         parts = [p.strip() for p in parts if p.strip()]
 
         if len(parts) > 1:
-            return parts
+            # Merge the header (before first date) with the first date block
+            # so each block has both its type and its date/shares/value
+            # The first part has fields like "Name:", "Nature of transaction:"
+            # The second part starts with "Date of transaction:"
+            # We want: [header + first_date_block, second_date_block, ...]
+            merged = [parts[0] + "\n" + parts[1]]
+            merged.extend(parts[2:])
+            return merged
         return [text]
 
     def _make_deal(self, section: str, director: str, role: str,
@@ -292,6 +409,8 @@ class RegexParser:
             confidence -= 0.2
         if not date_raw:
             confidence -= 0.1
+        if not type_raw:
+            confidence -= 0.1
         confidence = max(0.0, confidence)
 
         return ParsedDeal(
@@ -300,47 +419,55 @@ class RegexParser:
             transaction_date=parse_date(date_raw),
             transaction_type=classify_transaction(type_raw),
             shares=shares or 0,
-            price=price or 0.0,
-            value=value or 0.0,
-            class_of_securities=class_raw,
-            nature_of_interest=classify_interest(interest_raw),
-            clearance_received="yes" in clearance_raw.lower(),
+            price=round(price or 0.0, 4),
+            value=round(value or 0.0, 2),
+            class_of_securities=class_raw or "Ordinary shares",
+            nature_of_interest=classify_interest(interest_raw or ""),
+            clearance_received="yes" in (clearance_raw or "").lower(),
             confidence=round(confidence, 2),
         )
 
-    def parse(self, text: str) -> list[ParsedDeal]:
+    def parse(self, text: str) -> list:
         """Parse one SENS announcement into one or more deals."""
         deals = []
-        sections = self._split_multiple_directors(text)
 
-        # Extract fields that are common across all directors in this filing
+        # Extract fields common across the entire announcement
         common_date = self._extract(text, "transaction_date")
         common_type_raw = self._extract(text, "transaction_type")
         common_class = self._extract(text, "class_of_securities") or "Ordinary shares"
         common_interest = self._extract(text, "nature_of_interest") or ""
         common_clearance = self._extract(text, "clearance") or ""
+        common_price = self._extract(text, "price")
 
-        for section in sections:
-            # For each director section, extract their specific fields
-            # falling back to common fields where needed
-            director = self._extract(section, "director_name")
+        # Split into per-director blocks
+        blocks = self._split_into_blocks(text)
+
+        for block in blocks:
+            director = self._extract(block, "director_name")
             if not director:
-                # Try to find name at the start of the section
-                first_line = section.strip().split('\n')[0].strip()
-                if first_line and len(first_line) < 80 and not any(
-                    kw in first_line.lower() for kw in ['date', 'class', 'nature', 'price']
-                ):
-                    director = first_line
-                else:
-                    continue  # Can't identify director, skip
+                # For single-block announcements, also try the full text
+                if len(blocks) == 1:
+                    director = self._extract(text, "director_name")
+                if not director:
+                    # Try to find name at the start of the block
+                    first_line = block.strip().split('\n')[0].strip()
+                    if first_line and len(first_line) < 80 and not any(
+                        kw in first_line.lower() for kw in ['date', 'class', 'nature', 'price', 'total', 'number']
+                    ):
+                        director = first_line
+                    else:
+                        continue  # Can't identify director, skip
 
-            role = self._extract(section, "role") or "Director"
+            # Clean director name — remove trailing junk
+            director = re.sub(r'\s*\(.*?\)\s*$', '', director).strip()  # Remove (Pty) Ltd etc in parentheses
+            director = re.sub(r',\s*$', '', director).strip()
 
-            # Check for multiple transactions within this director's section
-            tx_blocks = self._split_transactions(section)
+            role = self._extract(block, "role") or self._extract(text, "role") or "Director"
+
+            # Check for multiple transactions within this director's block
+            tx_blocks = self._split_transactions(block)
 
             if len(tx_blocks) > 1:
-                # Multiple transactions for same director
                 for tx_block in tx_blocks:
                     deal = self._make_deal(
                         tx_block, director, role,
@@ -351,11 +478,25 @@ class RegexParser:
                         deals.append(deal)
             else:
                 deal = self._make_deal(
-                    section, director, role,
+                    block, director, role,
                     common_date, common_type_raw, common_class,
                     common_interest, common_clearance,
                 )
-                if deal:
+                if deal and (deal.shares or deal.value or deal.price):
+                    deals.append(deal)
+
+        # If we got nothing from block splitting, try parsing the whole text as one deal
+        if not deals:
+            director = self._extract(text, "director_name")
+            if director:
+                director = re.sub(r'\s*\(.*?\)\s*$', '', director).strip()
+                role = self._extract(text, "role") or "Director"
+                deal = self._make_deal(
+                    text, director, role,
+                    common_date, common_type_raw, common_class,
+                    common_interest, common_clearance,
+                )
+                if deal and (deal.shares or deal.value or deal.price):
                     deals.append(deal)
 
         return deals
@@ -374,11 +515,11 @@ class LLMParser:
       - Multiple directors in complex formats
     """
 
-    SYSTEM_PROMPT = """You are a financial data extraction specialist for the 
-Johannesburg Stock Exchange (JSE). You extract structured director dealing 
+    SYSTEM_PROMPT = """You are a financial data extraction specialist for the
+Johannesburg Stock Exchange (JSE). You extract structured director dealing
 information from SENS announcements.
 
-Extract ALL director dealings from the text. For each dealing, return a JSON 
+Extract ALL director dealings from the text. For each dealing, return a JSON
 object with these exact fields:
 
 {
@@ -402,7 +543,7 @@ If you cannot determine a field, use null.
     def __init__(self, api_key: str):
         self.api_key = api_key
 
-    def parse(self, text: str) -> list[ParsedDeal]:
+    def parse(self, text: str) -> list:
         """Send SENS text to Claude for extraction."""
         try:
             import anthropic
@@ -455,7 +596,7 @@ If you cannot determine a field, use null.
 class SENSParser:
     """
     Combined parser: tries regex first, falls back to LLM for low-confidence results.
-    
+
     Usage:
         parser = SENSParser(anthropic_api_key="sk-...")
         deals = parser.parse(raw_text, ticker="NPN", company="Naspers")
@@ -468,10 +609,10 @@ class SENSParser:
         self.regex_parser = RegexParser()
         self.llm_parser = LLMParser(anthropic_api_key) if anthropic_api_key else None
 
-    def parse(self, text: str, ticker: str = "", company: str = "") -> list[ParsedDeal]:
+    def parse(self, text: str, ticker: str = "", company: str = "") -> list:
         """
         Parse a SENS announcement into structured director dealings.
-        
+
         1. Try regex extraction first (fast, free)
         2. If confidence < threshold, escalate to LLM
         3. Return best results
@@ -512,7 +653,7 @@ ISIN: ZAE000325783
 
 DEALING IN SECURITIES BY A DIRECTOR
 
-In compliance with rules 3.63 to 3.74 of the JSE Limited Listings Requirements, 
+In compliance with rules 3.63 to 3.74 of the JSE Limited Listings Requirements,
 the following information is disclosed:
 
 Director: Mark Sorour
@@ -537,7 +678,7 @@ Shoprite Holdings Limited
 ISIN no: ZAE 000012084
 JSE share code: SHP
 
-DEALINGS IN SECURITIES BY DIRECTORS, THE COMPANY SECRETARY AND 
+DEALINGS IN SECURITIES BY DIRECTORS, THE COMPANY SECRETARY AND
 DIRECTORS OF MAIN SUBSIDIARY
 
 In compliance with rule 3.63 of the JSE Listings Requirements:
@@ -563,20 +704,100 @@ Number of shares: 32,441 ordinary shares
 Value of the transaction: R6,739,283.34
 """
 
+SAMPLE_ARGENT = """
+ARGENT INDUSTRIAL LIMITED
+(Incorporated in the Republic of South Africa)
+Registration number: 1993/002054/06
+JSE share code: ART
+ISIN: ZAE000019188
+
+DEALINGS IN SECURITIES BY A DIRECTOR OF THE COMPANY
+
+ NAME OF DIRECTOR                                TR Hendry
+ COMPANY OF WHICH A DIRECTOR                     Argent
+ STATUS: EXECUTIVE/NON-EXECUTIVE                 Executive director
+ TYPE AND CLASS OF SECURITIES                    Ordinary shares
+ NATURE OF TRANSACTION                           Purchase of shares by a director
+                                                 (on-market transaction)
+ DATE OF TRANSACTION                             12 March 2026
+ PRICE PER SECURITY                              R33.11
+ NUMBER OF SECURITIES TRANSACTED                 1,200
+ TOTAL RAND VALUE OF SECURITIES TRANSACTED       R39,732
+ NATURE AND EXTENT OF INTEREST IN THE TRANSACTION  Direct, beneficial
+"""
+
+SAMPLE_LIGHTHOUSE = """
+Lighthouse Properties plc
+Registered in Guernsey
+Guernsey registration number: 67712
+JSE share code: LTE
+ISIN: GG00BMDF5H44
+
+DEALING IN SECURITIES BY AN ASSOCIATE OF A DIRECTOR OF THE COMPANY
+
+Name of associate:                                            Delsa Investments (Pty) Ltd ('Delsa')
+Name of director and relationship to associate:               Desmond de Beer is a beneficiary of the trust that has a controlling interest in Delsa.
+Transaction date:                                             11 March 2026
+Class of securities:                                          Ordinary shares
+Number of securities:                                         992 906
+Weighted average price per security:                          ZAR 7.9037
+Total value:                                                  ZAR 7 847 631.15
+Nature of transaction:                                        On-market purchase of ordinary shares
+Nature and extent of director's interest:                     Indirect beneficial
+Clearance to deal received:                                   Yes
+"""
+
+SAMPLE_GRINDROD = """
+Grindrod Limited
+(Registration number 1966/009846/06)
+JSE share code: GND
+ISIN: ZAE000072328
+
+DEALINGS IN SECURITIES BY DIRECTORS AND THE COMPANY SECRETARY
+
+Name:                                                Vicky Commaille
+Designation:                                         Company Secretary
+Class of securities:                                 Ordinary shares
+Nature of transaction:                               Sale of securities (on market)
+Date of transaction:                                 12 March 2026
+Number of securities:                                16 667
+Volume weighted average price per security:          R17.2004
+Total value:                                         R286 679.07
+Extent of interest:                                  Direct beneficial
+Clearance to deal obtained:                          Yes
+
+Name:                                                Xolani Memory Mbambo
+Designation:                                         Non-Executive Director
+Class of securities:                                 Ordinary shares
+Nature of transaction:                               Purchase of securities (on market)
+Date of transaction:                                 12 March 2026
+Number of securities:                                10 000
+Volume weighted average price per security:          R17.0894
+Total value:                                         R170 894.00
+Extent of interest:                                  Direct beneficial
+Clearance to deal obtained:                          Yes
+"""
+
 
 if __name__ == "__main__":
     parser = SENSParser()
 
-    print("=" * 60)
-    print("TEST 1: Single director (Naspers)")
-    print("=" * 60)
-    deals = parser.parse(SAMPLE_SENS, ticker="NPN", company="Naspers")
-    for d in deals:
-        print(json.dumps(asdict(d), indent=2))
+    tests = [
+        ("Single director - Naspers", SAMPLE_SENS, "NPN", "Naspers"),
+        ("Multi-director lettered - Shoprite", SAMPLE_MULTI, "SHP", "Shoprite"),
+        ("Uppercase format - Argent", SAMPLE_ARGENT, "ART", "Argent Industrial"),
+        ("ZAR currency - Lighthouse", SAMPLE_LIGHTHOUSE, "LTE", "Lighthouse Properties"),
+        ("Repeated blocks - Grindrod", SAMPLE_GRINDROD, "GND", "Grindrod"),
+    ]
 
-    print("\n" + "=" * 60)
-    print("TEST 2: Multiple directors (Shoprite)")
-    print("=" * 60)
-    deals = parser.parse(SAMPLE_MULTI, ticker="SHP", company="Shoprite")
-    for d in deals:
-        print(json.dumps(asdict(d), indent=2))
+    for name, sample, ticker, company in tests:
+        print(f"\n{'='*60}")
+        print(f"TEST: {name}")
+        print(f"{'='*60}")
+        deals = parser.parse(sample, ticker=ticker, company=company)
+        if deals:
+            for d in deals:
+                print(json.dumps(asdict(d), indent=2))
+        else:
+            print("  NO DEALS PARSED!")
+        print(f"  => {len(deals)} deal(s)")
