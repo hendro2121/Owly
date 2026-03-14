@@ -417,6 +417,78 @@ async def refresh_endpoint(
     return {"status": "started", "period": period, "clear": clear}
 
 
+@app.get("/api/debug/scrape-test")
+async def debug_scrape_test(
+    secret: str = Query(..., description="CRON_SECRET to authorize"),
+):
+    """
+    Debug endpoint: runs a small synchronous scrape and returns results
+    so you can see exactly what's happening (or failing).
+    """
+    expected = os.environ.get("CRON_SECRET", "")
+    if not expected or secret != expected:
+        raise HTTPException(403, "Invalid secret")
+
+    results = {"steps": []}
+    try:
+        from scraper import MoneywebSENSStrategy
+        strategy = MoneywebSENSStrategy()
+
+        # Step 1: Try to fetch the Moneyweb listing page
+        results["steps"].append("Fetching Moneyweb SENS listing page...")
+        url = strategy._build_url(page=1)
+        results["listing_url"] = url
+
+        soup = strategy.fetch(url)
+        if not soup:
+            results["error"] = "Failed to fetch Moneyweb listing page"
+            return results
+
+        results["steps"].append("Page fetched OK")
+        results["page_title"] = soup.title.string if soup.title else "No title"
+
+        # Step 2: Try to parse listings
+        links = strategy._parse_listing_page(soup)
+        results["announcements_found"] = len(links)
+        results["steps"].append(f"Found {len(links)} announcements on page 1")
+
+        if links:
+            results["first_3"] = links[:3]
+
+            # Step 3: Try to fetch first article
+            first_url = links[0]["url"]
+            results["steps"].append(f"Fetching first article: {first_url}")
+            full_text = strategy.extract(first_url)
+
+            if full_text:
+                results["steps"].append(f"Article text length: {len(full_text)} chars")
+                results["article_preview"] = full_text[:500]
+
+                # Step 4: Try to parse it
+                from parser import SENSParser
+                parser = SENSParser()
+                deals = parser.parse(full_text, ticker=links[0].get("ticker", ""), company=links[0].get("company", ""))
+                results["deals_parsed"] = len(deals)
+                results["steps"].append(f"Parsed {len(deals)} deals")
+                if deals:
+                    from dataclasses import asdict
+                    results["parsed_deals"] = [asdict(d) for d in deals]
+            else:
+                results["error"] = "Failed to extract article text"
+        else:
+            # Check if page has sens-row divs at all
+            sens_rows = soup.find_all("div", class_="sens-row")
+            results["sens_rows_found"] = len(sens_rows)
+            results["steps"].append(f"Raw sens-row divs found: {len(sens_rows)}")
+
+    except Exception as e:
+        import traceback
+        results["error"] = str(e)
+        results["traceback"] = traceback.format_exc()
+
+    return results
+
+
 # ─── Static Files ────────────────────────────────────────────────────────────
 
 STATIC_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "frontend", "dist")
