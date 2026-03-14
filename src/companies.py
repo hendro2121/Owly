@@ -341,7 +341,7 @@ JSE_TOP_40 = [
 ]
 
 
-def get_by_ticker(ticker: str) -> dict | None:
+def get_by_ticker(ticker: str):
     """Look up a company by JSE ticker code."""
     return next((c for c in JSE_TOP_40 if c["ticker"] == ticker), None)
 
