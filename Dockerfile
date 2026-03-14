@@ -24,3 +24,4 @@ ENV PYTHONUNBUFFERED=1
 EXPOSE 8000
 
 CMD ["sh", "-c", "uvicorn src.api:app --host 0.0.0.0 --port ${PORT:-8000}"]
+# Note: railway.toml startCommand overrides this CMD on Railway
