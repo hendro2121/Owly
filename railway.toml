@@ -3,6 +3,6 @@ builder = "DOCKERFILE"
 dockerfilePath = "Dockerfile"
 
 [deploy]
-startCommand = "python -m uvicorn src.api:app --host 0.0.0.0 --port $PORT"
+startCommand = "python src/start.py"
 healthcheckPath = "/api/health"
 healthcheckTimeout = 120
