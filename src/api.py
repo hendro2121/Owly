@@ -164,20 +164,18 @@ async def startup():
         logger.error("DATABASE_URL not set!")
         return
     ensure_db()
-    with get_db() as conn:
-        if query_val(conn, "SELECT COUNT(*) FROM director_deals") == 0:
-            logger.info("Empty DB — seeding mock data...")
-            _seed_mock_data(conn)
     logger.info("Raven API started (PostgreSQL)")
 
 @app.get("/api/health")
 async def health():
+    if not DATABASE_URL:
+        return {"status": "ok", "database": "not_configured", "deals_in_db": 0}
     try:
         with get_db() as conn:
             count = query_val(conn, "SELECT COUNT(*) FROM director_deals")
         return {"status": "ok", "deals_in_db": count, "database": "postgresql"}
     except Exception as e:
-        return JSONResponse(status_code=500, content={"status": "error", "detail": str(e)})
+        return {"status": "degraded", "database": "error", "detail": str(e)}
 
 # ─── Deals ───────────────────────────────────────────────────────────────────
 
@@ -387,10 +385,12 @@ async def get_companies(sector: Optional[str]=None, include_delisted: bool=False
 async def refresh_endpoint(
     period: str = Query("week", pattern="^(week|month|3months|ytd|6months|1year)$"),
     secret: str = Query(..., description="CRON_SECRET to authorize refresh"),
+    clear: bool = Query(False, description="Clear existing deals before refresh"),
 ):
     """
     Trigger a Moneyweb SENS scrape. Protected by CRON_SECRET env var.
     Called by Railway cron service at 12:00 and 17:00 SAST Mon-Fri.
+    Pass clear=true on first run to wipe mock data before pulling real data.
     """
     expected = os.environ.get("CRON_SECRET", "")
     if not expected or secret != expected:
@@ -401,57 +401,21 @@ async def refresh_endpoint(
 
     def _run():
         try:
+            if clear:
+                with get_db() as conn:
+                    with conn.cursor() as cur:
+                        cur.execute("DELETE FROM director_deals")
+                        cur.execute("DELETE FROM raw_announcements")
+                    conn.commit()
+                    logger.info("Cleared existing deals and announcements")
             run_moneyweb_pipeline(period=period, max_pages=20)
             logger.info(f"Refresh complete (period={period})")
         except Exception as e:
             logger.error(f"Refresh failed: {e}")
 
-    # Run in background thread so the endpoint returns immediately
     threading.Thread(target=_run, daemon=True).start()
-    return {"status": "started", "period": period}
+    return {"status": "started", "period": period, "clear": clear}
 
-@app.post("/api/dev/seed")
-async def seed_endpoint():
-    with get_db() as conn:
-        _seed_mock_data(conn)
-    return {"status": "seeded"}
-
-def _seed_mock_data(conn):
-    from companies import JSE_TOP_40
-    with conn.cursor() as cur:
-        for c in JSE_TOP_40:
-            cur.execute("INSERT INTO companies (ticker,name,sector,ir_url) VALUES (%s,%s,%s,%s) ON CONFLICT (ticker) DO NOTHING",
-                (c["ticker"],c["name"],c["sector"],c.get("ir_page")))
-        deals = [
-            ("NPN","Naspers","Phuthi Mahanyele-Dabengwa","CEO","2026-02-28","Buy",12500,3842.50,48031250,"Direct"),
-            ("NPN","Naspers","Basil Sgourdos","CFO","2026-02-28","Buy",8000,3845.00,30760000,"Direct"),
-            ("NPN","Naspers","Ervin Tu","Non-Exec Director","2026-02-27","Buy",5000,3810.00,19050000,"Direct"),
-            ("SBK","Standard Bank","Sim Tshabalala","CEO","2026-02-27","Sell",45000,218.30,9823500,"Direct"),
-            ("SHP","Shoprite","Pieter Engelbrecht","CEO","2026-02-26","Buy",30000,268.45,8053500,"Direct"),
-            ("SHP","Shoprite","Anton de Bruyn","CFO","2026-02-26","Buy",20000,267.90,5358000,"Direct"),
-            ("FSR","FirstRand","Alan Gillespie","Chairman","2026-02-25","Buy",100000,72.15,7215000,"Direct"),
-            ("AGL","Anglo American","Duncan Wanblad","CEO","2026-02-25","Sell",15000,485.20,7278000,"Direct"),
-            ("MTN","MTN Group","Ralph Mupita","CEO","2026-02-24","Buy",55000,118.40,6512000,"Direct"),
-            ("CPI","Capitec","Gerrie Fourie","CEO","2026-02-24","Buy",3000,2540.00,7620000,"Direct"),
-            ("CPI","Capitec","Andre du Plessis","CFO","2026-02-23","Buy",2000,2535.00,5070000,"Direct"),
-            ("SOL","Sasol","Fleetwood Grobler","CEO","2026-02-21","Sell",25000,142.80,3570000,"Direct"),
-            ("DSY","Discovery","Adrian Gore","CEO","2026-02-21","Buy",40000,168.50,6740000,"Direct"),
-            ("WHL","Woolworths","Roy Bagattini","CEO","2026-02-20","Buy",50000,62.30,3115000,"Direct"),
-            ("ABG","Absa Group","Arrie Rautenbach","CEO","2026-02-20","Sell",35000,235.10,8228500,"Indirect"),
-            ("BHG","BHP Group","Mike Henry","CEO","2026-02-19","Sell",10000,520.40,5204000,"Direct"),
-            ("REM","Remgro","Jannie Durand","CEO","2026-02-19","Buy",22000,155.20,3414400,"Direct"),
-            ("VOD","Vodacom","Shameel Joosub","CEO","2026-02-18","Buy",18000,98.60,1774800,"Direct"),
-            ("SSW","Sibanye-Stillwater","Neal Froneman","CEO","2026-02-18","Buy",200000,22.45,4490000,"Direct"),
-            ("CLS","Clicks Group","Bertina Engelbrecht","CEO","2026-02-17","Buy",8000,312.70,2501600,"Direct"),
-            ("NED","Nedbank","Mike Brown","CEO","2026-02-14","Buy",15000,288.40,4326000,"Direct"),
-            ("OMU","Old Mutual","Iain Williamson","CEO","2026-02-14","Buy",60000,12.85,771000,"Direct"),
-            ("EXX","Exxaro","Nombasa Tsengwa","CEO","2026-02-13","Buy",10000,178.90,1789000,"Direct"),
-            ("MRP","Mr Price","Mark Blair","CEO","2026-02-17","Sell",12000,205.80,2469600,"Direct"),
-        ]
-        for d in deals:
-            cur.execute("INSERT INTO director_deals (ticker,company,director,role,transaction_date,transaction_type,shares,price,value,nature_of_interest,clearance_received,confidence) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,TRUE,1.0)", d)
-    conn.commit()
-    logger.info(f"Seeded {len(deals)} deals")
 
 # ─── Static Files ────────────────────────────────────────────────────────────
 
