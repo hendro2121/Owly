@@ -213,6 +213,18 @@ class RegexParser:
                 return match.group(1).strip()
         return None
 
+    def _extract_all(self, text: str, field: str) -> list[str]:
+        """Extract ALL matches for a field (for multi-transaction announcements)."""
+        results = []
+        for pattern in PATTERNS.get(field, []):
+            for match in re.finditer(pattern, text, re.IGNORECASE | re.MULTILINE):
+                val = match.group(1).strip()
+                if val and val not in results:
+                    results.append(val)
+            if results:
+                break  # Use first pattern that matches
+        return results
+
     def _split_multiple_directors(self, text: str) -> list[str]:
         """
         Some announcements contain multiple directors in one filing.
@@ -229,6 +241,72 @@ class RegexParser:
             return sections[1:]
 
         return [text]
+
+    def _split_transactions(self, text: str) -> list[str]:
+        """
+        Split a section into multiple transaction blocks when the same
+        director has multiple transactions (repeated Date of transaction fields).
+
+        e.g. Discovery example with transactions on 9 March and 10 March.
+        """
+        # Split on "Date of transaction" / "Date transaction effected" lines
+        date_pattern = r'(?=(?:Date\s+(?:of\s+)?transaction(?:s)?\s*(?:effected)?\s*[:\-]))'
+        parts = re.split(date_pattern, text, flags=re.IGNORECASE)
+        parts = [p.strip() for p in parts if p.strip()]
+
+        if len(parts) > 1:
+            return parts
+        return [text]
+
+    def _make_deal(self, section: str, director: str, role: str,
+                   common_date: str, common_type_raw: str, common_class: str,
+                   common_interest: str, common_clearance: str) -> Optional[ParsedDeal]:
+        """Build a ParsedDeal from a section of text."""
+        date_raw = self._extract(section, "transaction_date") or common_date or ""
+        type_raw = self._extract(section, "transaction_type") or common_type_raw or ""
+        shares_raw = self._extract(section, "shares")
+        price_raw = self._extract(section, "price")
+        value_raw = self._extract(section, "value")
+        interest_raw = self._extract(section, "nature_of_interest") or common_interest
+        clearance_raw = self._extract(section, "clearance") or common_clearance
+        class_raw = self._extract(section, "class_of_securities") or common_class
+
+        shares = clean_int(shares_raw) if shares_raw else 0
+        price = clean_number(price_raw) if price_raw else 0.0
+        value = clean_number(value_raw) if value_raw else 0.0
+
+        # Calculate value if not provided
+        if not value and shares and price:
+            value = shares * price
+        # Calculate price if not provided
+        if not price and shares and value:
+            price = value / shares if shares > 0 else 0.0
+
+        # Confidence scoring
+        confidence = 1.0
+        if not director or director == "Director":
+            confidence -= 0.3
+        if not shares:
+            confidence -= 0.2
+        if not price:
+            confidence -= 0.2
+        if not date_raw:
+            confidence -= 0.1
+        confidence = max(0.0, confidence)
+
+        return ParsedDeal(
+            director=director,
+            role=role,
+            transaction_date=parse_date(date_raw),
+            transaction_type=classify_transaction(type_raw),
+            shares=shares or 0,
+            price=price or 0.0,
+            value=value or 0.0,
+            class_of_securities=class_raw,
+            nature_of_interest=classify_interest(interest_raw),
+            clearance_received="yes" in clearance_raw.lower(),
+            confidence=round(confidence, 2),
+        )
 
     def parse(self, text: str) -> list[ParsedDeal]:
         """Parse one SENS announcement into one or more deals."""
@@ -257,51 +335,28 @@ class RegexParser:
                     continue  # Can't identify director, skip
 
             role = self._extract(section, "role") or "Director"
-            date_raw = self._extract(section, "transaction_date") or common_date or ""
-            type_raw = self._extract(section, "transaction_type") or common_type_raw or ""
-            shares_raw = self._extract(section, "shares")
-            price_raw = self._extract(section, "price")
-            value_raw = self._extract(section, "value")
-            interest_raw = self._extract(section, "nature_of_interest") or common_interest
-            clearance_raw = self._extract(section, "clearance") or common_clearance
-            class_raw = self._extract(section, "class_of_securities") or common_class
 
-            shares = clean_int(shares_raw) if shares_raw else 0
-            price = clean_number(price_raw) if price_raw else 0.0
-            value = clean_number(value_raw) if value_raw else 0.0
+            # Check for multiple transactions within this director's section
+            tx_blocks = self._split_transactions(section)
 
-            # Calculate value if not provided
-            if not value and shares and price:
-                value = shares * price
-            # Calculate price if not provided
-            if not price and shares and value:
-                price = value / shares if shares > 0 else 0.0
-
-            # Confidence scoring
-            confidence = 1.0
-            if not director or director == "Director":
-                confidence -= 0.3
-            if not shares:
-                confidence -= 0.2
-            if not price:
-                confidence -= 0.2
-            if not date_raw:
-                confidence -= 0.1
-            confidence = max(0.0, confidence)
-
-            deals.append(ParsedDeal(
-                director=director,
-                role=role,
-                transaction_date=parse_date(date_raw),
-                transaction_type=classify_transaction(type_raw),
-                shares=shares or 0,
-                price=price or 0.0,
-                value=value or 0.0,
-                class_of_securities=class_raw,
-                nature_of_interest=classify_interest(interest_raw),
-                clearance_received="yes" in clearance_raw.lower(),
-                confidence=round(confidence, 2),
-            ))
+            if len(tx_blocks) > 1:
+                # Multiple transactions for same director
+                for tx_block in tx_blocks:
+                    deal = self._make_deal(
+                        tx_block, director, role,
+                        common_date, common_type_raw, common_class,
+                        common_interest, common_clearance,
+                    )
+                    if deal and (deal.shares or deal.value):
+                        deals.append(deal)
+            else:
+                deal = self._make_deal(
+                    section, director, role,
+                    common_date, common_type_raw, common_class,
+                    common_interest, common_clearance,
+                )
+                if deal:
+                    deals.append(deal)
 
         return deals
 
