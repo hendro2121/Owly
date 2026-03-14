@@ -75,8 +75,8 @@ PATTERNS = {
         r"([\d,\s]+)\s+(?:ordinary\s+)?shares",
     ],
     "price": [
+        r"(?:Volume\s+weighted\s+average\s+(?:purchase\s+)?price(?:\s+per\s+(?:share|security))?)\s*[:\-]?\s*R?\s*([\d\s,\.]+)",
         r"(?:(?:Average\s+)?[Pp]rice\s+per\s+(?:share|security))\s*[:\-]?\s*R?\s*([\d\s,\.]+)",
-        r"(?:Volume\s+weighted\s+average\s+(?:purchase\s+)?price)\s*[:\-]?\s*R?\s*([\d\s,\.]+)",
     ],
     "value": [
         r"(?:(?:Total\s+)?[Vv]alue\s+of\s+(?:the\s+)?transaction)\s*[:\-]?\s*R?\s*([\d\s,\.]+)",
@@ -91,6 +91,7 @@ PATTERNS = {
     "clearance": [
         r"(?:Written\s+clearance\s+to\s+deal\s+(?:received|obtained))\s*[:\-]?\s*(.+?)(?:\n|$)",
         r"(?:Clearance\s+to\s+deal)\s*[:\-]?\s*(.+?)(?:\n|$)",
+        r"(?:Clearance\s+(?:received|obtained))\s*[:\-]?\s*(.+?)(?:\n|$)",
     ],
 }
 
