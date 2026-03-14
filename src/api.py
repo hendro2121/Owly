@@ -383,6 +383,33 @@ async def get_companies(sector: Optional[str]=None, include_delisted: bool=False
 
 # ─── Seed ────────────────────────────────────────────────────────────────────
 
+@app.post("/api/refresh")
+async def refresh_endpoint(
+    period: str = Query("week", pattern="^(week|month|3months|ytd|6months|1year)$"),
+    secret: str = Query(..., description="CRON_SECRET to authorize refresh"),
+):
+    """
+    Trigger a Moneyweb SENS scrape. Protected by CRON_SECRET env var.
+    Called by Railway cron service at 12:00 and 17:00 SAST Mon-Fri.
+    """
+    expected = os.environ.get("CRON_SECRET", "")
+    if not expected or secret != expected:
+        raise HTTPException(403, "Invalid secret")
+
+    import threading
+    from pipeline import run_moneyweb_pipeline
+
+    def _run():
+        try:
+            run_moneyweb_pipeline(period=period, max_pages=20)
+            logger.info(f"Refresh complete (period={period})")
+        except Exception as e:
+            logger.error(f"Refresh failed: {e}")
+
+    # Run in background thread so the endpoint returns immediately
+    threading.Thread(target=_run, daemon=True).start()
+    return {"status": "started", "period": period}
+
 @app.post("/api/dev/seed")
 async def seed_endpoint():
     with get_db() as conn:
