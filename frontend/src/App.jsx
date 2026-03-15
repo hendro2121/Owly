@@ -195,8 +195,10 @@ function Dash({go,setTicker}){
   const [allDeals,setAllDeals]=useState([]);
   const [clusters,setClusters]=useState([]);
   const [sectors,setSectors]=useState([]);
+  const [companies,setCompanies]=useState([]);
   const [stats,setStats]=useState(null);
   const [loading,setLoading]=useState(true);
+  const [companySearch,setCompanySearch]=useState("");
 
   useEffect(()=>{
     Promise.all([
@@ -204,11 +206,13 @@ function Dash({go,setTicker}){
       api.clusters(365,2).catch(()=>[]),
       api.sectors(365).catch(()=>[]),
       api.stats(365).catch(()=>null),
-    ]).then(([d,c,s,st])=>{
+      api.companies().catch(()=>[]),
+    ]).then(([d,c,s,st,co])=>{
       setAllDeals(d.deals||[]);
       setClusters(c);
       setSectors(s);
       setStats(st);
+      setCompanies(co);
       setLoading(false);
     });
   },[]);
@@ -254,7 +258,7 @@ function Dash({go,setTicker}){
       </div>
 
       <div style={{display:"flex",gap:0,marginBottom:20,borderBottom:"2px solid var(--g900)"}}>
-        {["feed","clusters","sectors"].map(t=>(
+        {["feed","clusters","sectors","companies"].map(t=>(
           <button key={t} onClick={()=>setTab(t)} style={{padding:"10px 22px",border:"none",background:"transparent",color:tab===t?"var(--g900)":"var(--g400)",fontFamily:"var(--f)",fontSize:14,fontWeight:700,cursor:"pointer",textTransform:"uppercase",letterSpacing:".04em",borderBottom:tab===t?"3px solid var(--or)":"3px solid transparent",marginBottom:-2}}>{t}</button>
         ))}
       </div>
@@ -342,6 +346,39 @@ function Dash({go,setTicker}){
                 <div style={{width:100,textAlign:"right"}}><div style={{fontFamily:"var(--mono)",fontSize:14,fontWeight:800,color:(s.net_flow||0)>=0?"var(--gn)":"var(--rd)"}}>{((s.net_flow||0)>=0?"+":"")+fmt.zar(Math.abs(s.net_flow||0))}</div><div style={{fontSize:10,fontFamily:"var(--mono)",color:"var(--g400)"}}>net flow</div></div>
               </div>
             ))}
+          </div>
+          )}
+        </div>
+      )}
+
+      {tab==="companies"&&(
+        <div className="rise">
+          <p style={{fontSize:15,color:"var(--g500)",marginBottom:20,lineHeight:1.7,maxWidth:600}}>Browse all JSE companies tracked by Raven. Click any company to see their full director dealing history.</p>
+          <div style={{marginBottom:16}}>
+            <div style={{position:"relative",display:"inline-block"}}>
+              <svg style={{position:"absolute",left:11,top:"50%",transform:"translateY(-50%)"}} width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--g400)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+              <input value={companySearch} onChange={e=>setCompanySearch(e.target.value)} placeholder="Search company or ticker..." style={{background:"var(--white)",border:"1.5px solid var(--g200)",borderRadius:8,padding:"8px 12px 8px 34px",fontSize:13,fontFamily:"var(--f)",color:"var(--g900)",outline:"none",width:300}}/>
+            </div>
+            <span style={{marginLeft:12,fontSize:12,fontFamily:"var(--mono)",color:"var(--g400)"}}>{companies.filter(c=>{if(!companySearch)return true;const s=companySearch.toLowerCase();return (c.name||"").toLowerCase().includes(s)||(c.ticker||"").toLowerCase().includes(s)||(c.sector||"").toLowerCase().includes(s)}).length} companies</span>
+          </div>
+          {companies.length===0 ? (
+            <div style={{padding:"40px 0",textAlign:"center",color:"var(--g400)",fontFamily:"var(--mono)",fontSize:13}}>No companies loaded yet.</div>
+          ) : (
+          <div style={{borderTop:"2px solid var(--g900)"}}>
+            <div style={{display:"grid",gridTemplateColumns:"80px 1.5fr 1fr 100px 100px",padding:"10px 0",fontSize:10,fontFamily:"var(--mono)",fontWeight:500,color:"var(--g400)",textTransform:"uppercase",letterSpacing:".1em",borderBottom:"1px solid var(--g200)"}}>
+              <div>Ticker</div><div>Company</div><div>Sector</div><div style={{textAlign:"right"}}>Deals</div><div style={{textAlign:"right"}}>Status</div>
+            </div>
+            <div style={{maxHeight:520,overflowY:"auto"}}>
+              {companies.filter(c=>{if(!companySearch)return true;const s=companySearch.toLowerCase();return (c.name||"").toLowerCase().includes(s)||(c.ticker||"").toLowerCase().includes(s)||(c.sector||"").toLowerCase().includes(s)}).map((c,i)=>(
+                <div key={c.ticker} onClick={()=>{if(c.deal_count>0){setTicker(c.ticker);go("company")}}} style={{display:"grid",gridTemplateColumns:"80px 1.5fr 1fr 100px 100px",padding:"13px 0",borderBottom:"1px solid var(--g100)",fontSize:13.5,cursor:c.deal_count>0?"pointer":"default",transition:"background .1s",opacity:c.deal_count>0?1:0.5}} onMouseEnter={e=>{if(c.deal_count>0)e.currentTarget.style.background="var(--g50)"}} onMouseLeave={e=>e.currentTarget.style.background="transparent"}>
+                  <div style={{fontWeight:700,fontFamily:"var(--mono)",fontSize:13,color:"var(--or)"}}>{c.ticker}</div>
+                  <div style={{fontWeight:500}}>{c.name}</div>
+                  <div style={{color:"var(--g500)",fontSize:12}}>{c.sector||"—"}</div>
+                  <div style={{textAlign:"right",fontFamily:"var(--mono)",fontSize:12,fontWeight:c.deal_count>0?700:400,color:c.deal_count>0?"var(--g900)":"var(--g300)"}}>{c.deal_count||0}</div>
+                  <div style={{textAlign:"right"}}><span style={{fontSize:10,fontFamily:"var(--mono)",padding:"2px 8px",borderRadius:4,background:c.status==="delisted"?"var(--rd-bg)":"var(--gn-bg)",color:c.status==="delisted"?"var(--rd)":"var(--gn)"}}>{c.status||"listed"}</span></div>
+                </div>
+              ))}
+            </div>
           </div>
           )}
         </div>
