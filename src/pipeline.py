@@ -96,13 +96,15 @@ def init_db():
             parsed BOOLEAN DEFAULT FALSE)""")
     conn.commit()
 
-    # Seed companies
+    # Seed companies (update name/sector if they were inserted with bad data)
     with conn.cursor() as cur:
         for c in JSE_TOP_40:
             cur.execute(
                 "INSERT INTO companies (ticker,name,sector,ir_url) "
-                "VALUES (%s,%s,%s,%s) ON CONFLICT (ticker) DO NOTHING",
-                (c["ticker"], c["name"], c["sector"], c.get("ir_page")),
+                "VALUES (%s,%s,%s,%s) "
+                "ON CONFLICT (ticker) DO UPDATE SET name=%s, sector=%s",
+                (c["ticker"], c["name"], c["sector"], c.get("ir_page"),
+                 c["name"], c["sector"]),
             )
     conn.commit()
     logger.info("Database initialized")
@@ -135,12 +137,25 @@ def store_raw(conn, announcements):
 
 
 def store_deals(conn, deals):
-    """Store parsed deals. Returns (conn, stored_count)."""
+    """Store parsed deals, skipping duplicates. Returns (conn, stored_count)."""
     conn = get_or_reconnect(conn)
     stored = 0
     with conn.cursor() as cur:
         for deal in deals:
             try:
+                # Check for duplicate: same ticker+director+date+shares+type
+                cur.execute("""
+                    SELECT id FROM director_deals
+                    WHERE ticker=%s AND director=%s AND transaction_date=%s
+                      AND shares=%s AND transaction_type=%s
+                """, (
+                    deal["ticker"], deal["director"],
+                    deal["transaction_date"] or None,
+                    deal["shares"], deal["transaction_type"],
+                ))
+                if cur.fetchone():
+                    continue
+
                 cur.execute("""
                     INSERT INTO director_deals
                     (ticker, company, director, role, transaction_date, announcement_date,
@@ -163,7 +178,7 @@ def store_deals(conn, deals):
                 except Exception:
                     conn = get_conn()
     conn.commit()
-    logger.info(f"Stored {stored} director deals")
+    logger.info(f"Stored {stored} new deals (skipped {len(deals) - stored} duplicates)")
     return conn, stored
 
 
