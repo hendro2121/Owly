@@ -22,7 +22,7 @@ if not APP_URL or not CRON_SECRET:
     print("ERROR: APP_URL and CRON_SECRET env vars required")
     sys.exit(1)
 
-url = f"{APP_URL}/api/refresh?period=week&secret={CRON_SECRET}"
+url = f"{APP_URL}/api/refresh?secret={CRON_SECRET}"
 print(f"Triggering refresh: {url.split('secret=')[0]}secret=***")
 
 try:
