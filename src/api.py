@@ -383,38 +383,29 @@ async def get_companies(sector: Optional[str]=None, include_delisted: bool=False
 
 @app.post("/api/refresh")
 async def refresh_endpoint(
-    period: str = Query("1year", pattern="^(week|month|3months|ytd|6months|1year|2years|3years|5years|all)$"),
     secret: str = Query(..., description="CRON_SECRET to authorize refresh"),
-    clear: bool = Query(True, description="Clear existing deals before refresh"),
 ):
     """
-    Trigger a Moneyweb SENS scrape. Protected by CRON_SECRET env var.
+    Trigger a Sharenet SENS scrape. Protected by CRON_SECRET env var.
     Called by Railway cron service at 12:00 and 17:00 SAST Mon-Fri.
-    Pass clear=true on first run to wipe mock data before pulling real data.
+    Scrapes today's director dealing announcements and adds new deals.
     """
     expected = os.environ.get("CRON_SECRET", "")
     if not expected or secret != expected:
         raise HTTPException(403, "Invalid secret")
 
     import threading
-    from pipeline import run_moneyweb_pipeline
+    from pipeline import run_pipeline
 
     def _run():
         try:
-            if clear:
-                with get_db() as conn:
-                    with conn.cursor() as cur:
-                        cur.execute("DELETE FROM director_deals")
-                        cur.execute("DELETE FROM raw_announcements")
-                    conn.commit()
-                    logger.info("Cleared existing deals and announcements")
-            run_moneyweb_pipeline(period=period, max_pages=20)
-            logger.info(f"Refresh complete (period={period})")
+            run_pipeline()
+            logger.info("Refresh complete")
         except Exception as e:
             logger.error(f"Refresh failed: {e}")
 
     threading.Thread(target=_run, daemon=True).start()
-    return {"status": "started", "period": period, "clear": clear}
+    return {"status": "started"}
 
 
 @app.get("/api/debug/scrape-test")
@@ -422,8 +413,7 @@ async def debug_scrape_test(
     secret: str = Query(..., description="CRON_SECRET to authorize"),
 ):
     """
-    Debug endpoint: runs a small synchronous scrape and returns results
-    so you can see exactly what's happening (or failing).
+    Debug endpoint: runs a small synchronous scrape and returns results.
     """
     expected = os.environ.get("CRON_SECRET", "")
     if not expected or secret != expected:
@@ -431,43 +421,31 @@ async def debug_scrape_test(
 
     results = {"steps": []}
     try:
-        from scraper import MoneywebSENSStrategy
-        strategy = MoneywebSENSStrategy()
+        from scraper import SharenetScraper
+        scraper = SharenetScraper()
 
-        # Step 1: Try to fetch the Moneyweb listing page
-        results["steps"].append("Fetching Moneyweb SENS listing page...")
-        url = strategy._build_url(page=1)
-        results["listing_url"] = url
-
-        soup = strategy.fetch(url)
-        if not soup:
-            results["error"] = "Failed to fetch Moneyweb listing page"
-            return results
-
-        results["steps"].append("Page fetched OK")
-        results["page_title"] = soup.title.string if soup.title else "No title"
-
-        # Step 2: Try to parse listings
-        links = strategy._parse_listing_page(soup)
+        # Step 1: Discover today's dealing announcements
+        results["steps"].append("Fetching Sharenet SENS listing...")
+        links = scraper.discover()
         results["announcements_found"] = len(links)
-        results["steps"].append(f"Found {len(links)} announcements on page 1")
+        results["steps"].append(f"Found {len(links)} dealing announcements")
 
         if links:
             results["first_3"] = links[:3]
 
-            # Step 3: Try to fetch first article
-            first_url = links[0]["url"]
-            results["steps"].append(f"Fetching first article: {first_url}")
-            full_text = strategy.extract(first_url)
+            # Step 2: Fetch first article
+            first = links[0]
+            results["steps"].append(f"Fetching: {first['title'][:60]}")
+            full_text = scraper.extract(first["url"])
 
             if full_text:
-                results["steps"].append(f"Article text length: {len(full_text)} chars")
+                results["steps"].append(f"Article text: {len(full_text)} chars")
                 results["article_preview"] = full_text[:500]
 
-                # Step 4: Try to parse it
+                # Step 3: Parse it
                 from parser import SENSParser
                 parser = SENSParser()
-                deals = parser.parse(full_text, ticker=links[0].get("ticker", ""), company=links[0].get("company", ""))
+                deals = parser.parse(full_text, ticker=first.get("ticker", ""), company=first.get("company", ""))
                 results["deals_parsed"] = len(deals)
                 results["steps"].append(f"Parsed {len(deals)} deals")
                 if deals:
@@ -475,11 +453,6 @@ async def debug_scrape_test(
                     results["parsed_deals"] = [asdict(d) for d in deals]
             else:
                 results["error"] = "Failed to extract article text"
-        else:
-            # Check if page has sens-row divs at all
-            sens_rows = soup.find_all("div", class_="sens-row")
-            results["sens_rows_found"] = len(sens_rows)
-            results["steps"].append(f"Raw sens-row divs found: {len(sens_rows)}")
 
     except Exception as e:
         import traceback
