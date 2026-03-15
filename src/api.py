@@ -158,13 +158,43 @@ def row_to_deal(r: dict) -> DealResponse:
 
 # ─── Startup ─────────────────────────────────────────────────────────────────
 
+def _start_daily_scraper():
+    """Background thread that scrapes Sharenet at 12:00 and 17:00 SAST on weekdays."""
+    import time
+    from datetime import datetime, timezone, timedelta
+
+    SAST = timezone(timedelta(hours=2))
+    logger.info("Daily scraper scheduler started")
+
+    while True:
+        now = datetime.now(SAST)
+        # Only run on weekdays (Mon=0 to Fri=4)
+        if now.weekday() < 5 and now.hour in (12, 17) and now.minute < 5:
+            logger.info(f"Scheduled scrape triggered at {now.strftime('%H:%M SAST')}")
+            try:
+                from pipeline import run_pipeline
+                run_pipeline()
+            except Exception as e:
+                logger.error(f"Scheduled scrape failed: {e}")
+            # Sleep 10 min to avoid re-triggering in the same window
+            time.sleep(600)
+        else:
+            # Check every 60 seconds
+            time.sleep(60)
+
+
 @app.on_event("startup")
 async def startup():
     if not DATABASE_URL:
         logger.error("DATABASE_URL not set!")
         return
     ensure_db()
-    logger.info("Raven API started (PostgreSQL)")
+
+    # Start the daily scraper in a background thread
+    import threading
+    threading.Thread(target=_start_daily_scraper, daemon=True).start()
+
+    logger.info("Raven API started (PostgreSQL + daily Sharenet scraper)")
 
 @app.get("/api/health")
 async def health():
