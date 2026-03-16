@@ -487,10 +487,12 @@ async def refresh_endpoint(
 async def brazil_backfill(
     secret: str = Query(..., description="CRON_SECRET to authorize"),
     year: Optional[int] = Query(None, description="Single year to load (default: all 2018-2026)"),
+    clean: bool = Query(False, description="Delete all existing B3 data before importing"),
 ):
     """
     Load Brazilian insider trading data from CVM into the database.
     Protected by CRON_SECRET. Runs in background thread.
+    Add &clean=true to wipe existing B3 data first (for re-importing with fixes).
 
     Usage:
       POST /api/brazil/backfill?secret=YOUR_SECRET           → all years 2018-2026
@@ -502,11 +504,26 @@ async def brazil_backfill(
 
     import threading
 
+    should_clean = clean  # capture in closure
+
     def _run():
         try:
-            from brazil_adapter import fetch_company_registry, fetch_trades, store_in_db
+            from brazil_adapter import fetch_company_registry, fetch_trades, fetch_ticker_mapping, store_in_db
+
+            # Optionally wipe existing B3 data for a clean re-import
+            if should_clean:
+                logger.info("Cleaning existing B3 data before re-import...")
+                with get_db() as conn:
+                    with conn.cursor() as cur:
+                        cur.execute("DELETE FROM director_deals WHERE market = 'B3'")
+                        deleted_deals = cur.rowcount
+                        cur.execute("DELETE FROM companies WHERE market = 'B3'")
+                        deleted_companies = cur.rowcount
+                    conn.commit()
+                logger.info(f"Deleted {deleted_deals} B3 deals and {deleted_companies} B3 companies")
 
             companies = fetch_company_registry()
+            ticker_map = fetch_ticker_mapping()
 
             if year:
                 years = [year]
@@ -517,7 +534,7 @@ async def brazil_backfill(
             for y in years:
                 deals = fetch_trades(y)
                 if deals:
-                    stats = store_in_db(deals, companies, DATABASE_URL)
+                    stats = store_in_db(deals, companies, DATABASE_URL, ticker_map)
                     total_inserted += stats["deals_inserted"]
                     logger.info(f"Brazil {y}: {stats['deals_inserted']} inserted, {stats['deals_skipped_dup']} skipped")
 

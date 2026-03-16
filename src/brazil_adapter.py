@@ -36,8 +36,18 @@ logger = logging.getLogger("brazil_adapter")
 
 CVM_COMPANY_URL = "https://dados.cvm.gov.br/dados/CIA_ABERTA/CAD/DADOS/cad_cia_aberta.csv"
 CVM_TRADES_URL = "https://dados.cvm.gov.br/dados/CIA_ABERTA/DOC/VLMO/DADOS/vlmo_cia_aberta_{year}.zip"
+CVM_FCA_URL = "https://dados.cvm.gov.br/dados/CIA_ABERTA/DOC/FCA/DADOS/fca_cia_aberta_{year}.zip"
 
 MARKET = "B3"
+
+# Portuguese role titles → English
+ROLE_MAP = {
+    "Conselho de Administração ou Vinculado": "Board of Directors",
+    "Diretor ou Vinculado": "Executive Director",
+    "Controlador ou Vinculado": "Controlling Shareholder",
+    "Conselho Fiscal ou Vinculado": "Fiscal Council",
+    "Órgão Estatutário ou Vinculado": "Statutory Body",
+}
 
 # Sectors from CVM SETOR_ATIV → friendlier names
 SECTOR_MAP = {
@@ -131,6 +141,56 @@ def parse_date(s: str) -> str | None:
             continue
     logger.debug("Unparseable date: %r", s)
     return None
+
+
+# ─── B3 Ticker mapping ────────────────────────────────────────────────────────
+
+def fetch_ticker_mapping() -> dict[str, str]:
+    """Download CVM FCA data to build a CNPJ → B3 ticker mapping.
+
+    Fetches FCA files from 2024-2026 and extracts Codigo_Negociacao (trading code).
+    Prefers ordinary shares (ending in 3) over preferred (ending in 4).
+
+    Returns:
+        { "00000000000191": "BBAS3", "33000167000101": "PETR3", ... }
+    """
+    mapping: dict[str, str] = {}
+
+    for year in [2024, 2025, 2026]:
+        url = CVM_FCA_URL.format(year=year)
+        try:
+            resp = requests.get(url, timeout=60)
+            if resp.status_code != 200:
+                logger.debug("FCA %d not available (HTTP %d)", year, resp.status_code)
+                continue
+
+            with zipfile.ZipFile(io.BytesIO(resp.content)) as zf:
+                fname = f"fca_cia_aberta_valor_mobiliario_{year}.csv"
+                if fname not in zf.namelist():
+                    continue
+                raw = zf.read(fname).decode("iso-8859-1")
+
+            reader = csv.DictReader(io.StringIO(raw), delimiter=";")
+            for row in reader:
+                cnpj = strip_cnpj(row.get("CNPJ_Companhia", ""))
+                ticker = (row.get("Codigo_Negociacao") or "").strip()
+                end_date = (row.get("Data_Fim_Negociacao") or "").strip()
+
+                if not cnpj or not ticker or ticker == "NÃO HÁ":
+                    continue
+                # Skip delisted tickers
+                if end_date:
+                    continue
+                # Prefer ordinary shares (ending in 3) over preferred (4)
+                if cnpj not in mapping or (ticker.endswith("3") and not mapping[cnpj].endswith("3")):
+                    mapping[cnpj] = ticker
+
+        except Exception as e:
+            logger.warning("Failed to fetch FCA %d: %s", year, e)
+            continue
+
+    logger.info("Built CNPJ→ticker mapping with %d entries", len(mapping))
+    return mapping
 
 
 # ─── CVM data fetching ───────────────────────────────────────────────────────
@@ -301,11 +361,25 @@ def fetch_trades(year: int) -> list[dict]:
             skipped_txn += 1
             continue
 
+        raw_role = (row.get("Tipo_Cargo") or "").strip()
+        translated_role = ROLE_MAP.get(raw_role, raw_role)
+        # Empresa is just the company name again — CVM data is aggregated by role,
+        # not individual names. Use the translated role as the director label.
+        tipo_empresa = (row.get("Tipo_Empresa") or "").strip()
+        # For subsidiaries/controllers, show their name + role
+        empresa = (row.get("Empresa") or "").strip()
+        comp_name = (row.get("Nome_Companhia") or "").strip()
+        if tipo_empresa == "Companhia" or empresa.upper() == comp_name.upper():
+            director_label = translated_role
+        else:
+            # Related entity (subsidiary/controller) — show entity name
+            director_label = f"{empresa} ({translated_role})"
+
         trades.append({
             "ticker": cnpj,
-            "company": (row.get("Nome_Companhia") or "").strip(),
-            "director": (row.get("Empresa") or "").strip(),
-            "role": (row.get("Tipo_Cargo") or "").strip(),
+            "company": comp_name,
+            "director": director_label,
+            "role": translated_role,
             "transaction_type": txn_type,
             "transaction_date": date,
             "shares": shares,
@@ -367,14 +441,19 @@ def ensure_market_columns(conn) -> None:
     logger.info("Ensured 'market' column exists on companies and director_deals")
 
 
-def store_in_db(deals: list[dict], companies: dict[str, dict], db_url: str) -> dict:
+def store_in_db(deals: list[dict], companies: dict[str, dict], db_url: str,
+                ticker_map: dict[str, str] | None = None) -> dict:
     """Insert trades and companies into the Raven PostgreSQL database.
 
-    - Adds company rows (upsert by ticker/CNPJ) with market='B3'
+    - Maps CNPJ → B3 ticker using ticker_map (e.g. PETR3, VALE3)
+    - Adds company rows (upsert by ticker) with market='B3'
     - Inserts deal rows, deduplicating on (ticker, director, transaction_date, shares, transaction_type)
     - Returns stats dict with counts of inserted/skipped.
     """
     import psycopg2
+
+    if ticker_map is None:
+        ticker_map = {}
 
     conn = _get_connection(db_url)
     ensure_market_columns(conn)
@@ -387,18 +466,25 @@ def store_in_db(deals: list[dict], companies: dict[str, dict], db_url: str) -> d
         "deals_skipped_no_company": 0,
     }
 
-    # Collect unique CNPJs from deals
+    # Map CNPJs to B3 tickers and collect unique ones
     deal_cnpjs = {d["ticker"] for d in deals}
     logger.info("Upserting %d companies referenced in trades...", len(deal_cnpjs))
+
+    # Remap deal tickers from CNPJ to B3 ticker symbol
+    for deal in deals:
+        cnpj = deal["ticker"]
+        deal["_cnpj"] = cnpj  # Keep original CNPJ for reference
+        deal["ticker"] = ticker_map.get(cnpj, cnpj)  # Use B3 ticker if available
 
     with conn.cursor() as cur:
         for cnpj in deal_cnpjs:
             info = companies.get(cnpj, {})
             name = info.get("name") or next(
-                (d["company"] for d in deals if d["ticker"] == cnpj), cnpj
+                (d["company"] for d in deals if d.get("_cnpj") == cnpj), cnpj
             )
             sector = info.get("sector") or "Unknown"
             status = "active" if info.get("status") == "ATIVO" else "unlisted"
+            ticker = ticker_map.get(cnpj, cnpj)
 
             cur.execute(
                 """
@@ -410,7 +496,7 @@ def store_in_db(deals: list[dict], companies: dict[str, dict], db_url: str) -> d
                     status = EXCLUDED.status,
                     market = EXCLUDED.market
                 """,
-                (cnpj, name, sector, status, MARKET),
+                (ticker, name, sector, status, MARKET),
             )
             # Check if it was an insert or update
             if cur.statusmessage and "INSERT" in cur.statusmessage:
@@ -593,8 +679,9 @@ def main():
     else:
         years = [args.year]
 
-    # Fetch company registry once
+    # Fetch company registry and ticker mapping once
     companies = fetch_company_registry()
+    ticker_map = fetch_ticker_mapping()
 
     # Aggregate stats
     total_stats = {
@@ -619,7 +706,7 @@ def main():
             export_csv(deals, f"brazil_insider_trades_{year}.csv")
 
         if args.db:
-            stats = store_in_db(deals, companies, args.db)
+            stats = store_in_db(deals, companies, args.db, ticker_map)
             for k, v in stats.items():
                 total_stats[k] += v
 

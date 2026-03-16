@@ -2,7 +2,7 @@ import { useState, useMemo, useEffect } from "react";
 import api from "./api";
 
 const fmtCur=(v,market)=>{const p=market==="B3"?"R$":"R";if(!v)return p+"0";if(v>=1e9)return p+(v/1e9).toFixed(1)+"bn";if(v>=1e6)return p+(v/1e6).toFixed(1)+"m";if(v>=1e3)return p+(v/1e3).toFixed(0)+"k";return p+Math.round(v)};
-const fmt={zar:v=>fmtCur(v,"JSE"),num:n=>(n||0).toLocaleString("en-ZA"),d:d=>d?new Date(d).toLocaleDateString("en-ZA",{day:"numeric",month:"short"}):"",full:d=>d?new Date(d).toLocaleDateString("en-ZA",{day:"numeric",month:"long",year:"numeric"}):""};
+const fmt={zar:v=>fmtCur(v,"JSE"),num:n=>(n||0).toLocaleString("en-ZA"),d:d=>d?new Date(d).toLocaleDateString("en-ZA",{day:"numeric",month:"short",year:"numeric"}):"",full:d=>d?new Date(d).toLocaleDateString("en-ZA",{day:"numeric",month:"long",year:"numeric"}):""};
 
 // Geometric Raven Logo SVG
 const RavenLogo = ({size=32,color="#FF5C00"}) => (
