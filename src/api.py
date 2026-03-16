@@ -483,6 +483,54 @@ async def refresh_endpoint(
     return {"status": "started"}
 
 
+@app.post("/api/brazil/backfill")
+async def brazil_backfill(
+    secret: str = Query(..., description="CRON_SECRET to authorize"),
+    year: Optional[int] = Query(None, description="Single year to load (default: all 2018-2026)"),
+):
+    """
+    Load Brazilian insider trading data from CVM into the database.
+    Protected by CRON_SECRET. Runs in background thread.
+
+    Usage:
+      POST /api/brazil/backfill?secret=YOUR_SECRET           → all years 2018-2026
+      POST /api/brazil/backfill?secret=YOUR_SECRET&year=2025  → single year
+    """
+    expected = os.environ.get("CRON_SECRET", "")
+    if not expected or secret != expected:
+        raise HTTPException(403, "Invalid secret")
+
+    import threading
+
+    def _run():
+        try:
+            from brazil_adapter import fetch_company_registry, fetch_trades, store_in_db
+
+            companies = fetch_company_registry()
+
+            if year:
+                years = [year]
+            else:
+                years = list(range(2018, 2027))
+
+            total_inserted = 0
+            for y in years:
+                deals = fetch_trades(y)
+                if deals:
+                    stats = store_in_db(deals, companies, DATABASE_URL)
+                    total_inserted += stats["deals_inserted"]
+                    logger.info(f"Brazil {y}: {stats['deals_inserted']} inserted, {stats['deals_skipped_dup']} skipped")
+
+            logger.info(f"Brazil backfill complete: {total_inserted} total deals inserted")
+        except Exception as e:
+            logger.error(f"Brazil backfill failed: {e}")
+            import traceback
+            logger.error(traceback.format_exc())
+
+    threading.Thread(target=_run, daemon=True).start()
+    return {"status": "started", "years": [year] if year else list(range(2018, 2027))}
+
+
 @app.get("/api/debug/scrape-test")
 async def debug_scrape_test(
     secret: str = Query(..., description="CRON_SECRET to authorize"),
