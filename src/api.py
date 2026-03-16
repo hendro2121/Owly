@@ -483,7 +483,7 @@ async def refresh_endpoint(
     return {"status": "started"}
 
 
-@app.post("/api/brazil/backfill")
+@app.api_route("/api/brazil/backfill", methods=["GET", "POST"])
 async def brazil_backfill(
     secret: str = Query(..., description="CRON_SECRET to authorize"),
     year: Optional[int] = Query(None, description="Single year to load (default: all 2018-2026)"),
