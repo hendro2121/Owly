@@ -1,7 +1,8 @@
 import { useState, useMemo, useEffect } from "react";
 import api from "./api";
 
-const fmt={zar:v=>!v?"R0":v>=1e9?"R"+(v/1e9).toFixed(1)+"bn":v>=1e6?"R"+(v/1e6).toFixed(1)+"m":v>=1e3?"R"+(v/1e3).toFixed(0)+"k":"R"+Math.round(v),num:n=>(n||0).toLocaleString("en-ZA"),d:d=>d?new Date(d).toLocaleDateString("en-ZA",{day:"numeric",month:"short"}):"",full:d=>d?new Date(d).toLocaleDateString("en-ZA",{day:"numeric",month:"long",year:"numeric"}):""};
+const fmtCur=(v,market)=>{const p=market==="B3"?"R$":"R";if(!v)return p+"0";if(v>=1e9)return p+(v/1e9).toFixed(1)+"bn";if(v>=1e6)return p+(v/1e6).toFixed(1)+"m";if(v>=1e3)return p+(v/1e3).toFixed(0)+"k";return p+Math.round(v)};
+const fmt={zar:v=>fmtCur(v,"JSE"),num:n=>(n||0).toLocaleString("en-ZA"),d:d=>d?new Date(d).toLocaleDateString("en-ZA",{day:"numeric",month:"short"}):"",full:d=>d?new Date(d).toLocaleDateString("en-ZA",{day:"numeric",month:"long",year:"numeric"}):""};
 
 // Geometric Raven Logo SVG
 const RavenLogo = ({size=32,color="#FF5C00"}) => (
@@ -92,7 +93,7 @@ function Landing({go}){
           WHERE INSIDERS PUT<br/>THEIR MONEY <span className="em">{"—"}FIRST</span>
         </h1>
         <p className="rise" style={{fontSize:20,color:"var(--g500)",lineHeight:1.65,maxWidth:520,marginTop:28,animationDelay:".08s"}}>
-          Raven tracks every director trade on the Johannesburg Stock Exchange and turns it into structured, searchable intelligence.
+          Raven tracks every director trade on the JSE and B3 exchanges and turns it into structured, searchable intelligence.
         </p>
         <div className="rise" style={{display:"flex",gap:12,marginTop:32,animationDelay:".14s"}}>
           <button onClick={()=>go("dashboard")} style={{padding:"14px 32px",borderRadius:10,background:"var(--or)",color:"#fff",fontSize:16,fontWeight:700,border:"none",cursor:"pointer",fontFamily:"var(--f)"}}>View Live Deals</button>
@@ -139,7 +140,7 @@ function Landing({go}){
                 <span style={{color:"var(--g500)",fontSize:14}}>{d.director}</span>
                 <span style={{color:"var(--g300)",fontSize:11,fontFamily:"var(--mono)"}}>{d.role}</span>
               </div>
-              <span style={{fontFamily:"var(--mono)",fontSize:14,fontWeight:700,color:d.transaction_type==="Buy"?"var(--gn)":"var(--rd)"}}>{fmt.zar(d.value)}</span>
+              <span style={{fontFamily:"var(--mono)",fontSize:14,fontWeight:700,color:d.transaction_type==="Buy"?"var(--gn)":"var(--rd)"}}>{fmtCur(d.value,d.market||"JSE")}</span>
             </div>
           ))}
         </div>
@@ -191,6 +192,7 @@ function Dash({go,setTicker}){
   const [q,setQ]=useState("");
   const [mv,setMv]=useState(0);
   const [period,setPeriod]=useState("All");
+  const [market,setMarket]=useState(null); // null=all, "JSE", "B3"
 
   const [allDeals,setAllDeals]=useState([]);
   const [clusters,setClusters]=useState([]);
@@ -211,13 +213,14 @@ function Dash({go,setTicker}){
     return 365;
   };
 
-  useEffect(()=>{
+  const loadAll=()=>{
+    setLoading(true);
     Promise.all([
-      api.deals({perPage:200}).catch(()=>({deals:[]})),
-      api.clusters(365,2).catch(()=>[]),
-      api.sectors(periodToDays(sectorPeriod)).catch(()=>[]),
-      api.stats(365).catch(()=>null),
-      api.companies(undefined,periodToDays(companyPeriod)).catch(()=>[]),
+      api.deals({perPage:200,market:market||undefined}).catch(()=>({deals:[]})),
+      api.clusters(365,2,market||undefined).catch(()=>[]),
+      api.sectors(periodToDays(sectorPeriod),market||undefined).catch(()=>[]),
+      api.stats(365,market||undefined).catch(()=>null),
+      api.companies(undefined,periodToDays(companyPeriod),market||undefined).catch(()=>[]),
     ]).then(([d,c,s,st,co])=>{
       setAllDeals(d.deals||[]);
       setClusters(c);
@@ -226,18 +229,20 @@ function Dash({go,setTicker}){
       setCompanies(co);
       setLoading(false);
     });
-  },[]);
+  };
+
+  useEffect(()=>{loadAll()},[market]);
 
   useEffect(()=>{
     if(loading)return;
     setSectorsLoading(true);
-    api.sectors(periodToDays(sectorPeriod)).then(s=>{setSectors(s);setSectorsLoading(false)}).catch(()=>setSectorsLoading(false));
+    api.sectors(periodToDays(sectorPeriod),market||undefined).then(s=>{setSectors(s);setSectorsLoading(false)}).catch(()=>setSectorsLoading(false));
   },[sectorPeriod]);
 
   useEffect(()=>{
     if(loading)return;
     setCompaniesLoading(true);
-    api.companies(undefined,periodToDays(companyPeriod)).then(co=>{setCompanies(co);setCompaniesLoading(false)}).catch(()=>setCompaniesLoading(false));
+    api.companies(undefined,periodToDays(companyPeriod),market||undefined).then(co=>{setCompanies(co);setCompaniesLoading(false)}).catch(()=>setCompaniesLoading(false));
   },[companyPeriod]);
 
   const cutoff=useMemo(()=>{
@@ -263,6 +268,8 @@ function Dash({go,setTicker}){
   const bv=stats?stats.buy_value:allDeals.filter(d=>d.transaction_type==="Buy").reduce((s,d)=>s+(d.value||0),0);
   const sv=stats?stats.sell_value:allDeals.filter(d=>d.transaction_type==="Sell").reduce((s,d)=>s+(d.value||0),0);
   const clusterCount=stats?stats.cluster_count:clusters.length;
+  const cur=v=>fmtCur(v,market||"JSE");
+  const dealCur=(v,d)=>fmtCur(v,d&&d.market||market||"JSE");
 
   const maxS=Math.max(...sectors.map(s=>Math.max(s.buy_value||0,s.sell_value||0)),1);
   const pill=(l,a,fn,ac)=><button onClick={fn} style={{padding:"6px 14px",borderRadius:8,border:"1.5px solid "+(a?(ac||"var(--g900)"):"var(--g200)"),background:a?(ac||"var(--g900)"):"var(--white)",color:a?"#fff":"var(--g500)",fontSize:12,fontWeight:600,cursor:"pointer",fontFamily:ac?"var(--mono)":"var(--f)"}}>{l}</button>;
@@ -272,7 +279,7 @@ function Dash({go,setTicker}){
   return(
     <div style={{maxWidth:1220,margin:"0 auto",padding:"0 40px 64px"}}>
       <div className="rise" style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:12,margin:"28px 0"}}>
-        {[{l:"NET INSIDER FLOW",v:fmt.zar(bv-sv),c:"var(--gn)"},{l:"BUY VOLUME",v:fmt.zar(bv),c:"var(--gn)"},{l:"SELL VOLUME",v:fmt.zar(sv),c:"var(--rd)"},{l:"CLUSTER SIGNALS",v:String(clusterCount),c:"var(--or)"}].map((s,i)=>(
+        {[{l:"NET INSIDER FLOW",v:cur(bv-sv),c:"var(--gn)"},{l:"BUY VOLUME",v:cur(bv),c:"var(--gn)"},{l:"SELL VOLUME",v:cur(sv),c:"var(--rd)"},{l:"CLUSTER SIGNALS",v:String(clusterCount),c:"var(--or)"}].map((s,i)=>(
           <div key={i} style={{padding:"20px",border:"1px solid var(--g200)",borderRadius:12}}>
             <div style={{fontSize:10,fontFamily:"var(--mono)",color:"var(--g400)",textTransform:"uppercase",letterSpacing:".1em",marginBottom:8}}>{s.l}</div>
             <div style={{fontSize:28,fontWeight:800,color:s.c,fontFamily:"var(--mono)",letterSpacing:"-.03em"}}>{s.v}</div>
@@ -280,10 +287,17 @@ function Dash({go,setTicker}){
         ))}
       </div>
 
-      <div style={{display:"flex",gap:0,marginBottom:20,borderBottom:"2px solid var(--g900)"}}>
-        {["feed","clusters","sectors","companies"].map(t=>(
-          <button key={t} onClick={()=>setTab(t)} style={{padding:"10px 22px",border:"none",background:"transparent",color:tab===t?"var(--g900)":"var(--g400)",fontFamily:"var(--f)",fontSize:14,fontWeight:700,cursor:"pointer",textTransform:"uppercase",letterSpacing:".04em",borderBottom:tab===t?"3px solid var(--or)":"3px solid transparent",marginBottom:-2}}>{t}</button>
-        ))}
+      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:20,borderBottom:"2px solid var(--g900)"}}>
+        <div style={{display:"flex",gap:0}}>
+          {["feed","clusters","sectors","companies"].map(t=>(
+            <button key={t} onClick={()=>setTab(t)} style={{padding:"10px 22px",border:"none",background:"transparent",color:tab===t?"var(--g900)":"var(--g400)",fontFamily:"var(--f)",fontSize:14,fontWeight:700,cursor:"pointer",textTransform:"uppercase",letterSpacing:".04em",borderBottom:tab===t?"3px solid var(--or)":"3px solid transparent",marginBottom:-2}}>{t}</button>
+          ))}
+        </div>
+        <div style={{display:"flex",gap:4,alignItems:"center",marginBottom:-2}}>
+          {[{l:"All",v:null},{l:"🇿🇦 JSE",v:"JSE"},{l:"🇧🇷 B3",v:"B3"}].map(m=>(
+            <button key={m.l} onClick={()=>setMarket(m.v)} style={{padding:"5px 12px",borderRadius:7,border:"none",background:market===m.v?"var(--or)":"transparent",color:market===m.v?"#fff":"var(--g400)",fontSize:11,fontFamily:"var(--mono)",fontWeight:600,cursor:"pointer"}}>{m.l}</button>
+          ))}
+        </div>
       </div>
 
       {tab==="feed"&&(
@@ -316,8 +330,8 @@ function Dash({go,setTicker}){
                   <div><span style={{color:"var(--g600)"}}>{d.director}</span><span style={{color:"var(--g300)",marginLeft:6,fontSize:10.5,fontFamily:"var(--mono)"}}>{d.role}</span></div>
                   <div><Tag type={d.transaction_type}/></div>
                   <div style={{textAlign:"right",fontFamily:"var(--mono)",fontSize:12,color:"var(--g500)"}}>{fmt.num(d.shares)}</div>
-                  <div style={{textAlign:"right",fontFamily:"var(--mono)",fontSize:12,color:"var(--g500)"}}>{d.price!=null?"R"+Number(d.price).toFixed(2):"—"}</div>
-                  <div style={{textAlign:"right",fontFamily:"var(--mono)",fontSize:12,fontWeight:700,color:d.transaction_type==="Buy"?"var(--gn)":"var(--rd)"}}>{fmt.zar(d.value)}</div>
+                  <div style={{textAlign:"right",fontFamily:"var(--mono)",fontSize:12,color:"var(--g500)"}}>{d.price!=null?(d.market==="B3"?"R$":"R")+Number(d.price).toFixed(2):"—"}</div>
+                  <div style={{textAlign:"right",fontFamily:"var(--mono)",fontSize:12,fontWeight:700,color:d.transaction_type==="Buy"?"var(--gn)":"var(--rd)"}}>{dealCur(d.value,d)}</div>
                 </div>
               ))}
             </div>
@@ -340,10 +354,10 @@ function Dash({go,setTicker}){
               {(c.directors||[]).map((d,j)=>(
                 <div key={j} style={{display:"flex",justifyContent:"space-between",padding:"8px 0",borderTop:j>0?"1px solid var(--g100)":"none"}}>
                   <div><span style={{fontWeight:500,fontSize:14}}>{d.name}</span><span style={{color:"var(--g400)",fontSize:11,fontFamily:"var(--mono)",marginLeft:10}}>{d.role}</span></div>
-                  <div style={{display:"flex",gap:20,alignItems:"center"}}><span style={{fontFamily:"var(--mono)",fontSize:11,color:"var(--g400)"}}>{fmt.d(d.date)}</span><span style={{fontFamily:"var(--mono)",fontSize:13,fontWeight:700,color:"var(--gn)"}}>{fmt.zar(d.value)}</span></div>
+                  <div style={{display:"flex",gap:20,alignItems:"center"}}><span style={{fontFamily:"var(--mono)",fontSize:11,color:"var(--g400)"}}>{fmt.d(d.date)}</span><span style={{fontFamily:"var(--mono)",fontSize:13,fontWeight:700,color:"var(--gn)"}}>{cur(d.value)}</span></div>
                 </div>
               ))}
-              <div style={{marginTop:14,fontSize:10,fontFamily:"var(--mono)",color:"var(--g400)",textTransform:"uppercase",letterSpacing:".08em"}}>Combined <span style={{fontWeight:800,color:"var(--g900)",fontSize:18,marginLeft:8}}>{fmt.zar(c.total_value)}</span></div>
+              <div style={{marginTop:14,fontSize:10,fontFamily:"var(--mono)",color:"var(--g400)",textTransform:"uppercase",letterSpacing:".08em"}}>Combined <span style={{fontWeight:800,color:"var(--g900)",fontSize:18,marginLeft:8}}>{cur(c.total_value)}</span></div>
             </div>
           ))}
         </div>
@@ -368,9 +382,9 @@ function Dash({go,setTicker}){
                     <div style={{width:((s.buy_value||0)/maxS*100)+"%",background:"var(--gn)",borderRadius:4,transition:"width .5s"}}/>
                     <div style={{width:((s.sell_value||0)/maxS*100)+"%",background:"var(--rd)",borderRadius:4,transition:"width .5s"}}/>
                   </div>
-                  <div style={{display:"flex",justifyContent:"space-between",marginTop:5}}><span style={{fontSize:11,fontFamily:"var(--mono)",color:"var(--gn)"}}>{fmt.zar(s.buy_value)}</span><span style={{fontSize:11,fontFamily:"var(--mono)",color:"var(--rd)"}}>{fmt.zar(s.sell_value)}</span></div>
+                  <div style={{display:"flex",justifyContent:"space-between",marginTop:5}}><span style={{fontSize:11,fontFamily:"var(--mono)",color:"var(--gn)"}}>{cur(s.buy_value)}</span><span style={{fontSize:11,fontFamily:"var(--mono)",color:"var(--rd)"}}>{cur(s.sell_value)}</span></div>
                 </div>
-                <div style={{width:100,textAlign:"right"}}><div style={{fontFamily:"var(--mono)",fontSize:14,fontWeight:800,color:(s.net_flow||0)>=0?"var(--gn)":"var(--rd)"}}>{((s.net_flow||0)>=0?"+":"")+fmt.zar(Math.abs(s.net_flow||0))}</div><div style={{fontSize:10,fontFamily:"var(--mono)",color:"var(--g400)"}}>net flow</div></div>
+                <div style={{width:100,textAlign:"right"}}><div style={{fontFamily:"var(--mono)",fontSize:14,fontWeight:800,color:(s.net_flow||0)>=0?"var(--gn)":"var(--rd)"}}>{((s.net_flow||0)>=0?"+":"")+cur(Math.abs(s.net_flow||0))}</div><div style={{fontSize:10,fontFamily:"var(--mono)",color:"var(--g400)"}}>net flow</div></div>
               </div>
             ))}
           </div>
@@ -436,6 +450,8 @@ function Company({ticker,go}){
   );
 
   const co=deals[0].company;
+  const mkt=deals[0].market||"JSE";
+  const cc=v=>fmtCur(v,mkt);
   const buys=deals.filter(d=>d.transaction_type==="Buy"),sells=deals.filter(d=>d.transaction_type==="Sell");
   const bv=buys.reduce((s,d)=>s+(d.value||0),0),sv=sells.reduce((s,d)=>s+(d.value||0),0);
   return(
@@ -446,7 +462,7 @@ function Company({ticker,go}){
         <div style={{display:"flex",alignItems:"center",gap:12,marginTop:6}}><span style={{fontSize:20,color:"var(--g500)"}}>{co}</span></div>
       </div>
       <div className="rise" style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:12,margin:"28px 0",animationDelay:".06s"}}>
-        {[{l:"BUYS",v:fmt.zar(bv),c:"var(--gn)"},{l:"SELLS",v:fmt.zar(sv),c:"var(--rd)"},{l:"NET FLOW",v:fmt.zar(bv-sv),c:bv>=sv?"var(--gn)":"var(--rd)"},{l:"DIRECTORS",v:[...new Set(deals.map(d=>d.director))].length,c:"var(--g900)"}].map((s,i)=>(
+        {[{l:"BUYS",v:cc(bv),c:"var(--gn)"},{l:"SELLS",v:cc(sv),c:"var(--rd)"},{l:"NET FLOW",v:cc(bv-sv),c:bv>=sv?"var(--gn)":"var(--rd)"},{l:"DIRECTORS",v:[...new Set(deals.map(d=>d.director))].length,c:"var(--g900)"}].map((s,i)=>(
           <div key={i} style={{padding:"18px 20px",border:"1px solid var(--g200)",borderRadius:12}}>
             <div style={{fontSize:10,fontFamily:"var(--mono)",color:"var(--g400)",textTransform:"uppercase",letterSpacing:".1em",marginBottom:6}}>{s.l}</div>
             <div style={{fontSize:26,fontWeight:800,color:s.c,fontFamily:"var(--mono)",letterSpacing:"-.03em"}}>{s.v}</div>
@@ -458,7 +474,7 @@ function Company({ticker,go}){
         {deals.map((d,i)=>(
           <div key={d.id||i} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"14px 0",borderBottom:"1px solid var(--g100)"}}>
             <div style={{display:"flex",alignItems:"center",gap:14}}><Tag type={d.transaction_type}/><span style={{fontWeight:600}}>{d.director}</span><span style={{color:"var(--g400)",fontSize:11,fontFamily:"var(--mono)"}}>{d.role}</span></div>
-            <div style={{display:"flex",alignItems:"center",gap:20}}><span style={{fontFamily:"var(--mono)",fontSize:12,color:"var(--g400)"}}>{fmt.full(d.transaction_date)}</span><span style={{fontFamily:"var(--mono)",fontSize:12,color:"var(--g500)"}}>{fmt.num(d.shares)}{d.price!=null?" @ R"+Number(d.price).toFixed(2):""}</span><span style={{fontFamily:"var(--mono)",fontSize:14,fontWeight:700,color:d.transaction_type==="Buy"?"var(--gn)":"var(--rd)",minWidth:80,textAlign:"right"}}>{fmt.zar(d.value)}</span></div>
+            <div style={{display:"flex",alignItems:"center",gap:20}}><span style={{fontFamily:"var(--mono)",fontSize:12,color:"var(--g400)"}}>{fmt.full(d.transaction_date)}</span><span style={{fontFamily:"var(--mono)",fontSize:12,color:"var(--g500)"}}>{fmt.num(d.shares)}{d.price!=null?" @ "+(mkt==="B3"?"R$":"R")+Number(d.price).toFixed(2):""}</span><span style={{fontFamily:"var(--mono)",fontSize:14,fontWeight:700,color:d.transaction_type==="Buy"?"var(--gn)":"var(--rd)",minWidth:80,textAlign:"right"}}>{cc(d.value)}</span></div>
           </div>
         ))}
       </div>

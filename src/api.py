@@ -102,6 +102,23 @@ def ensure_db():
             cur.execute("CREATE INDEX IF NOT EXISTS idx_deals_date ON director_deals(transaction_date)")
             cur.execute("CREATE INDEX IF NOT EXISTS idx_deals_type ON director_deals(transaction_type)")
             cur.execute("CREATE INDEX IF NOT EXISTS idx_deals_value ON director_deals(value)")
+            # Multi-market support: add market column to both tables
+            cur.execute("""
+                DO $$ BEGIN
+                    ALTER TABLE companies ADD COLUMN market TEXT DEFAULT 'JSE';
+                EXCEPTION WHEN duplicate_column THEN NULL;
+                END $$
+            """)
+            cur.execute("""
+                DO $$ BEGIN
+                    ALTER TABLE director_deals ADD COLUMN market TEXT DEFAULT 'JSE';
+                EXCEPTION WHEN duplicate_column THEN NULL;
+                END $$
+            """)
+            cur.execute("UPDATE companies SET market = 'JSE' WHERE market IS NULL")
+            cur.execute("UPDATE director_deals SET market = 'JSE' WHERE market IS NULL")
+            cur.execute("CREATE INDEX IF NOT EXISTS idx_deals_market ON director_deals(market)")
+            cur.execute("CREATE INDEX IF NOT EXISTS idx_companies_market ON companies(market)")
         conn.commit()
         logger.info("PostgreSQL tables ready")
 
@@ -114,6 +131,7 @@ class DealResponse(BaseModel):
     shares: Optional[int]=None; price: Optional[float]=None
     value: Optional[float]=None; nature_of_interest: Optional[str]=None
     confidence: Optional[float]=None; source_url: Optional[str]=None
+    market: Optional[str]="JSE"
 
 class PaginatedDeals(BaseModel):
     deals: list[DealResponse]; total: int; page: int; per_page: int; pages: int
@@ -147,6 +165,7 @@ class CompanyInfo(BaseModel):
     ticker: str; name: str; sector: Optional[str]=None
     status: Optional[str]="listed"
     last_scraped: Optional[str]=None; deal_count: Optional[int]=0
+    market: Optional[str]="JSE"
 
 def row_to_deal(r: dict) -> DealResponse:
     d = dict(r)
@@ -215,6 +234,7 @@ async def get_deals(
     ticker: Optional[str]=None, director: Optional[str]=None,
     transaction_type: Optional[str]=Query(None,pattern="^(Buy|Sell|Vesting|TaxSale)$"),
     exclude_non_discretionary: bool=Query(True, description="Exclude vestings and tax sales"),
+    market: Optional[str]=Query(None, description="Filter by market: JSE, B3, or omit for all"),
     sector: Optional[str]=None, min_value: Optional[float]=None,
     max_value: Optional[float]=None, days: Optional[int]=Query(None,ge=1,le=365),
     sort: str=Query("transaction_date",pattern="^(transaction_date|value|shares|company|director)$"),
@@ -230,6 +250,7 @@ async def get_deals(
         if transaction_type: conds.append(f"d.transaction_type = {p(transaction_type)}")
         if exclude_non_discretionary and not transaction_type:
             conds.append("d.transaction_type IN ('Buy', 'Sell')")
+        if market: conds.append(f"d.market = {p(market.upper())}")
         if sector: conds.append(f"c.sector = {p(sector)}")
         # Exclude delisted companies by default
         conds.append("COALESCE(c.status, 'listed') != 'delisted'")
@@ -272,16 +293,22 @@ async def get_director(name: str=Path(...,min_length=2), limit: int=Query(50,ge=
 # ─── Clusters ────────────────────────────────────────────────────────────────
 
 @app.get("/api/deals/clusters", response_model=list[ClusterSignal])
-async def get_clusters(days: int=Query(30,ge=7,le=365), min_insiders: int=Query(2,ge=2,le=10)):
+async def get_clusters(days: int=Query(30,ge=7,le=365), min_insiders: int=Query(2,ge=2,le=10), market: Optional[str]=None):
     with get_db() as conn:
         cutoff = (datetime.now()-timedelta(days=days)).strftime("%Y-%m-%d")
-        raw = query(conn, """
+        market_filter = ""
+        params = [cutoff]
+        if market:
+            market_filter = " AND d.market = %s"
+            params.append(market.upper())
+        params.append(min_insiders)
+        raw = query(conn, f"""
             SELECT d.ticker, d.company, c.sector, COUNT(DISTINCT d.director) as cnt, SUM(d.value) as tv
             FROM director_deals d LEFT JOIN companies c ON d.ticker=c.ticker
-            WHERE d.transaction_type='Buy' AND d.transaction_date>=%s
+            WHERE d.transaction_type='Buy' AND d.transaction_date>=%s{market_filter}
             GROUP BY d.ticker, d.company, c.sector HAVING COUNT(DISTINCT d.director)>=%s
             ORDER BY SUM(d.value) DESC
-        """, (cutoff, min_insiders))
+        """, params)
         clusters = []
         for r in raw:
             dirs = query(conn, "SELECT director,role,shares,price,value,transaction_date FROM director_deals WHERE ticker=%s AND transaction_type='Buy' AND transaction_date>=%s ORDER BY value DESC", (r["ticker"], cutoff))
@@ -299,10 +326,15 @@ async def get_clusters(days: int=Query(30,ge=7,le=365), min_insiders: int=Query(
 # ─── Sectors ─────────────────────────────────────────────────────────────────
 
 @app.get("/api/deals/sectors", response_model=list[SectorFlow])
-async def get_sectors(days: int=Query(30,ge=7,le=365)):
+async def get_sectors(days: int=Query(30,ge=7,le=365), market: Optional[str]=None):
     with get_db() as conn:
         cutoff = (datetime.now()-timedelta(days=days)).strftime("%Y-%m-%d")
-        rows = query(conn, """
+        market_filter = ""
+        params = [cutoff]
+        if market:
+            market_filter = " AND d.market = %s"
+            params.append(market.upper())
+        rows = query(conn, f"""
             SELECT c.sector,
                 SUM(CASE WHEN d.transaction_type='Buy' THEN d.value ELSE 0 END) as bv,
                 SUM(CASE WHEN d.transaction_type='Sell' THEN d.value ELSE 0 END) as sv,
@@ -310,29 +342,34 @@ async def get_sectors(days: int=Query(30,ge=7,le=365)):
                 SUM(CASE WHEN d.transaction_type='Sell' THEN 1 ELSE 0 END) as sc,
                 COUNT(*) as tc
             FROM director_deals d LEFT JOIN companies c ON d.ticker=c.ticker
-            WHERE d.transaction_date>=%s AND c.sector IS NOT NULL
+            WHERE d.transaction_date>=%s{market_filter} AND c.sector IS NOT NULL
             GROUP BY c.sector ORDER BY (SUM(CASE WHEN d.transaction_type='Buy' THEN d.value ELSE 0 END)-SUM(CASE WHEN d.transaction_type='Sell' THEN d.value ELSE 0 END)) DESC
-        """, (cutoff,))
+        """, params)
         return [SectorFlow(sector=r["sector"],buy_value=float(r["bv"] or 0),sell_value=float(r["sv"] or 0),
             net_flow=float((r["bv"] or 0)-(r["sv"] or 0)),buy_count=r["bc"],sell_count=r["sc"],trade_count=r["tc"]) for r in rows]
 
 # ─── Stats ───────────────────────────────────────────────────────────────────
 
 @app.get("/api/stats", response_model=DashboardStats)
-async def get_stats(days: int=Query(30,ge=7,le=365)):
+async def get_stats(days: int=Query(30,ge=7,le=365), market: Optional[str]=None):
     with get_db() as conn:
         cutoff = (datetime.now()-timedelta(days=days)).strftime("%Y-%m-%d")
-        r = query_one(conn, """
+        market_filter = ""
+        params = [cutoff]
+        if market:
+            market_filter = " AND market = %s"
+            params.append(market.upper())
+        r = query_one(conn, f"""
             SELECT COUNT(*) as total,
                 COALESCE(SUM(CASE WHEN transaction_type='Buy' THEN 1 ELSE 0 END),0) as buys,
                 COALESCE(SUM(CASE WHEN transaction_type='Sell' THEN 1 ELSE 0 END),0) as sells,
                 COALESCE(SUM(CASE WHEN transaction_type='Buy' THEN value ELSE 0 END),0) as bv,
                 COALESCE(SUM(CASE WHEN transaction_type='Sell' THEN value ELSE 0 END),0) as sv,
                 COUNT(DISTINCT ticker) as comps, COUNT(DISTINCT director) as dirs
-            FROM director_deals WHERE transaction_date>=%s
-        """, (cutoff,))
+            FROM director_deals WHERE transaction_date>=%s{market_filter}
+        """, params)
         bv, sv = float(r["bv"]), float(r["sv"])
-        cc = query_val(conn, "SELECT COUNT(*) FROM (SELECT ticker FROM director_deals WHERE transaction_type='Buy' AND transaction_date>=%s GROUP BY ticker HAVING COUNT(DISTINCT director)>=2) sub", (cutoff,))
+        cc = query_val(conn, f"SELECT COUNT(*) FROM (SELECT ticker FROM director_deals WHERE transaction_type='Buy' AND transaction_date>=%s{market_filter} GROUP BY ticker HAVING COUNT(DISTINCT director)>=2) sub", params)
         return DashboardStats(total_deals=r["total"],buy_count=r["buys"],sell_count=r["sells"],
             buy_value=bv,sell_value=sv,net_flow=bv-sv,
             buy_sell_ratio=round(bv/sv,2) if sv>0 else 0,
@@ -392,7 +429,7 @@ async def get_period_stats(ticker: Optional[str]=None):
 # ─── Companies ───────────────────────────────────────────────────────────────
 
 @app.get("/api/companies", response_model=list[CompanyInfo])
-async def get_companies(sector: Optional[str]=None, include_delisted: bool=False, days: Optional[int]=Query(None,ge=1,le=1825)):
+async def get_companies(sector: Optional[str]=None, include_delisted: bool=False, days: Optional[int]=Query(None,ge=1,le=1825), market: Optional[str]=None):
     with get_db() as conn:
         deal_filter = ""
         params = []
@@ -400,20 +437,22 @@ async def get_companies(sector: Optional[str]=None, include_delisted: bool=False
             cutoff = (datetime.now()-timedelta(days=days)).strftime("%Y-%m-%d")
             deal_filter = " AND d.transaction_date >= %s"
             params.append(cutoff)
-        sql = f"SELECT c.ticker,c.name,c.sector,c.status,c.last_scraped,COUNT(CASE WHEN d.id IS NOT NULL{deal_filter} THEN 1 END) as deal_count FROM companies c LEFT JOIN director_deals d ON c.ticker=d.ticker"
+        sql = f"SELECT c.ticker,c.name,c.sector,c.status,c.last_scraped,c.market,COUNT(CASE WHEN d.id IS NOT NULL{deal_filter} THEN 1 END) as deal_count FROM companies c LEFT JOIN director_deals d ON c.ticker=d.ticker"
         conds = []
+        if market:
+            conds.append("c.market=%s"); params.append(market.upper())
         if sector:
             conds.append("c.sector=%s"); params.append(sector)
         if not include_delisted:
             conds.append("COALESCE(c.status, 'listed') != 'delisted'")
         if conds:
             sql += " WHERE " + " AND ".join(conds)
-        sql += " GROUP BY c.ticker,c.name,c.sector,c.status,c.last_scraped ORDER BY c.name"
+        sql += " GROUP BY c.ticker,c.name,c.sector,c.status,c.last_scraped,c.market ORDER BY c.name"
         rows = query(conn, sql, params)
         return [CompanyInfo(ticker=r["ticker"],name=r["name"],sector=r["sector"],
             status=r.get("status", "listed"),
             last_scraped=r["last_scraped"].isoformat() if r["last_scraped"] else None,
-            deal_count=r["deal_count"]) for r in rows]
+            deal_count=r["deal_count"],market=r.get("market","JSE")) for r in rows]
 
 # ─── Seed ────────────────────────────────────────────────────────────────────
 

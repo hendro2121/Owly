@@ -40,7 +40,7 @@ class ParsedDeal:
     director: str
     role: str
     transaction_date: str
-    transaction_type: str       # Buy / Sell
+    transaction_type: str       # Buy / Sell / Vesting / TaxSale / OptionsExercise / Conversion
     shares: int
     price: float
     value: float
@@ -214,14 +214,29 @@ def parse_date(text: str) -> Optional[str]:
     return text  # Return as-is if we can't parse
 
 
-def classify_transaction(text: str) -> str:
+def classify_transaction(text: str, llm_fallback: bool = False, api_key: str = None) -> str:
     """
-    Classify transaction as Buy, Sell, Vesting, or TaxSale.
+    Classify transaction type using keyword matching, with optional LLM fallback.
 
-    Vestings and TaxSales are non-discretionary — they don't signal
-    insider sentiment and should be filtered out of analysis.
+    Two-tier approach:
+      1. Keyword matching (instant, free) → handles 90%+ of cases
+      2. LLM classification via Claude Haiku (fast, cheap) → handles edge cases
+
+    Returns one of: Buy, Sell, Vesting, TaxSale, OptionsExercise, Conversion, Unknown
+
+    Discretionary (open market signals):
+      - Buy: On-market purchases, acquisitions
+      - Sell: On-market sales, disposals
+
+    Non-discretionary (corporate actions):
+      - Vesting: LTI awards, share plans, conditional shares
+      - TaxSale: Sales to fund tax obligations
+      - OptionsExercise: Exercise of share options/SARs
+      - Conversion: Conversion of securities, rights issues
     """
     lower = text.lower()
+
+    # ── Tier 1: Keyword matching ─────────────────────────────────────────
 
     # Check non-discretionary types first (more specific)
     tax_sale_keywords = [
@@ -236,6 +251,17 @@ def classify_transaction(text: str) -> str:
         "share appreciation right", "share matching scheme",
         "acceptance of conditional",
     ]
+    options_keywords = [
+        "exercise of option", "option exercise", "exercised option",
+        "share option", "share appreciation right exercised",
+        "sar exercise", "exercise of share appreciation",
+        "exercised share appreciation", "stock option",
+    ]
+    conversion_keywords = [
+        "conversion of", "converted", "rights issue", "rights offer",
+        "capitalisation issue", "scrip dividend", "share split",
+        "share consolidation", "bonus issue",
+    ]
 
     for kw in tax_sale_keywords:
         if kw in lower:
@@ -243,6 +269,12 @@ def classify_transaction(text: str) -> str:
     for kw in vesting_keywords:
         if kw in lower:
             return "Vesting"
+    for kw in options_keywords:
+        if kw in lower:
+            return "OptionsExercise"
+    for kw in conversion_keywords:
+        if kw in lower:
+            return "Conversion"
 
     # Discretionary transactions
     sell_keywords = ["sale", "sold", "disposal", "selling", "on-market disposal",
@@ -259,7 +291,65 @@ def classify_transaction(text: str) -> str:
     for kw in sell_keywords:
         if kw in lower:
             return "Sell"
+
+    # ── Tier 2: LLM fallback ─────────────────────────────────────────────
+    if llm_fallback and api_key:
+        llm_result = _llm_classify_transaction(text, api_key)
+        if llm_result != "Unknown":
+            logger.info(f"LLM classified transaction as '{llm_result}': {text[:80]}...")
+            return llm_result
+
     return "Unknown"
+
+
+def _llm_classify_transaction(text: str, api_key: str) -> str:
+    """
+    Use Claude Haiku to classify a transaction type.
+
+    This is a lightweight, targeted call — just the transaction description,
+    not the full SENS announcement. Costs ~$0.0001 per call.
+    """
+    try:
+        import anthropic
+
+        client = anthropic.Anthropic(api_key=api_key)
+
+        message = client.messages.create(
+            model="claude-haiku-4-20250414",
+            max_tokens=20,
+            system=(
+                "Classify the following director dealing transaction description "
+                "into EXACTLY one of these types. Reply with ONLY the type, nothing else.\n\n"
+                "Types:\n"
+                "- Buy (on-market purchase, acquisition of shares)\n"
+                "- Sell (on-market sale, disposal of shares)\n"
+                "- Vesting (LTI awards, share plans, conditional shares vesting)\n"
+                "- TaxSale (sale to fund tax obligations, net settlement for tax)\n"
+                "- OptionsExercise (exercise of share options, SARs)\n"
+                "- Conversion (conversion of securities, rights issues, scrip dividends)\n"
+                "- Unknown (cannot determine)\n"
+            ),
+            messages=[{
+                "role": "user",
+                "content": f"Transaction description: {text[:500]}"
+            }]
+        )
+
+        result = message.content[0].text.strip()
+        # Validate it's one of our known types
+        valid_types = {"Buy", "Sell", "Vesting", "TaxSale", "OptionsExercise", "Conversion", "Unknown"}
+        if result in valid_types:
+            return result
+        # Try to match partial/fuzzy response
+        result_lower = result.lower()
+        for vt in valid_types:
+            if vt.lower() in result_lower:
+                return vt
+        return "Unknown"
+
+    except Exception as e:
+        logger.warning(f"LLM transaction classification failed: {e}")
+        return "Unknown"
 
 
 def classify_interest(text: str) -> str:
@@ -279,6 +369,9 @@ class RegexParser:
     Extracts director dealing fields using regex patterns.
     Works well for standard-format SENS announcements.
     """
+
+    def __init__(self, anthropic_api_key: str = None):
+        self.api_key = anthropic_api_key
 
     def _extract(self, text: str, field: str) -> Optional[str]:
         """Try each pattern for a field, return first match."""
@@ -413,11 +506,18 @@ class RegexParser:
             confidence -= 0.1
         confidence = max(0.0, confidence)
 
+        # Classify transaction with LLM fallback if available
+        tx_type = classify_transaction(
+            type_raw,
+            llm_fallback=bool(self.api_key),
+            api_key=self.api_key,
+        )
+
         return ParsedDeal(
             director=director,
             role=role,
             transaction_date=parse_date(date_raw),
-            transaction_type=classify_transaction(type_raw),
+            transaction_type=tx_type,
             shares=shares or 0,
             price=round(price or 0.0, 4),
             value=round(value or 0.0, 2),
@@ -526,7 +626,7 @@ object with these exact fields:
   "director": "Full name of the director",
   "role": "Their position (CEO, CFO, Non-Executive Director, etc.)",
   "transaction_date": "YYYY-MM-DD format",
-  "transaction_type": "Buy" or "Sell",
+  "transaction_type": one of "Buy", "Sell", "Vesting", "TaxSale", "OptionsExercise", "Conversion",
   "shares": integer number of shares,
   "price": float price per share in ZAR,
   "value": float total value in ZAR,
@@ -535,10 +635,16 @@ object with these exact fields:
   "clearance_received": true or false
 }
 
+Transaction type classification:
+- "Buy": On-market purchases, acquisitions of shares
+- "Sell": On-market sales, disposals of shares
+- "Vesting": LTI awards, share plan vestings, conditional share awards
+- "TaxSale": Sales to fund/settle tax obligations, net settlements for tax
+- "OptionsExercise": Exercise of share options, share appreciation rights (SARs)
+- "Conversion": Conversion of securities, rights issues, scrip dividends
+
 Return ONLY a JSON array of these objects. No markdown, no explanation.
-If you cannot determine a field, use null.
-"Buy" includes: purchases, awards, vestings, exercises.
-"Sell" includes: sales, disposals, on-market selling."""
+If you cannot determine a field, use null."""
 
     def __init__(self, api_key: str):
         self.api_key = api_key
@@ -606,7 +712,8 @@ class SENSParser:
     LLM_THRESHOLD = 0.6
 
     def __init__(self, anthropic_api_key: str = None):
-        self.regex_parser = RegexParser()
+        self.api_key = anthropic_api_key
+        self.regex_parser = RegexParser(anthropic_api_key=anthropic_api_key)
         self.llm_parser = LLMParser(anthropic_api_key) if anthropic_api_key else None
 
     def parse(self, text: str, ticker: str = "", company: str = "") -> list:

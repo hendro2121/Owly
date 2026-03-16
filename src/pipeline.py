@@ -190,7 +190,10 @@ def run_pipeline(output_format="json"):
     """
     conn = init_db()
     scraper = SharenetScraper()
-    parser = SENSParser()
+
+    # Pass API key for LLM fallback classification (optional — works without it)
+    anthropic_key = os.environ.get("ANTHROPIC_API_KEY")
+    parser = SENSParser(anthropic_api_key=anthropic_key)
 
     # Build company lookup
     known_companies = {c["ticker"]: c for c in JSE_TOP_40}

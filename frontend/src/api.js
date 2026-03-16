@@ -31,19 +31,19 @@ export const api = {
   health: () => request('/health'),
 
   /** Dashboard summary stats */
-  stats: (days = 30) => request('/stats', { days }),
+  stats: (days = 30, market) => request('/stats', { days, market }),
 
   /** Paginated deals with filters */
   deals: ({
     page = 1, perPage = 50, ticker, director,
     transactionType, sector, minValue, maxValue,
-    days, sort, order, search,
+    days, sort, order, search, market,
   } = {}) =>
     request('/deals', {
       page, per_page: perPage, ticker, director,
       transaction_type: transactionType, sector,
       min_value: minValue, max_value: maxValue,
-      days, sort, order, search,
+      days, sort, order, search, market,
     }),
 
   /** Most recent deals */
@@ -58,14 +58,14 @@ export const api = {
     request(`/deals/director/${encodeURIComponent(name)}`, { limit }),
 
   /** Cluster buy detection */
-  clusters: (days = 30, minInsiders = 2) =>
-    request('/deals/clusters', { days, min_insiders: minInsiders }),
+  clusters: (days = 30, minInsiders = 2, market) =>
+    request('/deals/clusters', { days, min_insiders: minInsiders, market }),
 
   /** Sector flow aggregation */
-  sectors: (days = 30) => request('/deals/sectors', { days }),
+  sectors: (days = 30, market) => request('/deals/sectors', { days, market }),
 
   /** Company registry */
-  companies: (sector, days) => request('/companies', { sector, days }),
+  companies: (sector, days, market) => request('/companies', { sector, days, market }),
 
   /** Seed mock data (development only) */
   seed: () =>
