@@ -392,10 +392,16 @@ async def get_period_stats(ticker: Optional[str]=None):
 # ─── Companies ───────────────────────────────────────────────────────────────
 
 @app.get("/api/companies", response_model=list[CompanyInfo])
-async def get_companies(sector: Optional[str]=None, include_delisted: bool=False):
+async def get_companies(sector: Optional[str]=None, include_delisted: bool=False, days: Optional[int]=Query(None,ge=1,le=1825)):
     with get_db() as conn:
-        sql = "SELECT c.ticker,c.name,c.sector,c.status,c.last_scraped,COUNT(d.id) as deal_count FROM companies c LEFT JOIN director_deals d ON c.ticker=d.ticker"
-        conds, params = [], []
+        deal_filter = ""
+        params = []
+        if days:
+            cutoff = (datetime.now()-timedelta(days=days)).strftime("%Y-%m-%d")
+            deal_filter = " AND d.transaction_date >= %s"
+            params.append(cutoff)
+        sql = f"SELECT c.ticker,c.name,c.sector,c.status,c.last_scraped,COUNT(CASE WHEN d.id IS NOT NULL{deal_filter} THEN 1 END) as deal_count FROM companies c LEFT JOIN director_deals d ON c.ticker=d.ticker"
+        conds = []
         if sector:
             conds.append("c.sector=%s"); params.append(sector)
         if not include_delisted:

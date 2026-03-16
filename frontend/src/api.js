@@ -65,7 +65,7 @@ export const api = {
   sectors: (days = 30) => request('/deals/sectors', { days }),
 
   /** Company registry */
-  companies: (sector) => request('/companies', { sector }),
+  companies: (sector, days) => request('/companies', { sector, days }),
 
   /** Seed mock data (development only) */
   seed: () =>

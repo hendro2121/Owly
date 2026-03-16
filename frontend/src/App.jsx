@@ -199,14 +199,25 @@ function Dash({go,setTicker}){
   const [stats,setStats]=useState(null);
   const [loading,setLoading]=useState(true);
   const [companySearch,setCompanySearch]=useState("");
+  const [sectorPeriod,setSectorPeriod]=useState("1Y");
+  const [companyPeriod,setCompanyPeriod]=useState("1Y");
+  const [sectorsLoading,setSectorsLoading]=useState(false);
+  const [companiesLoading,setCompaniesLoading]=useState(false);
+
+  const periodToDays=(p)=>{
+    if(p==="1W")return 7;if(p==="1M")return 30;if(p==="3M")return 90;
+    if(p==="6M")return 180;if(p==="1Y")return 365;
+    if(p==="YTD"){const n=new Date();return Math.ceil((n-new Date(n.getFullYear(),0,1))/(1000*60*60*24))||1}
+    return 365;
+  };
 
   useEffect(()=>{
     Promise.all([
       api.deals({perPage:200}).catch(()=>({deals:[]})),
       api.clusters(365,2).catch(()=>[]),
-      api.sectors(365).catch(()=>[]),
+      api.sectors(periodToDays(sectorPeriod)).catch(()=>[]),
       api.stats(365).catch(()=>null),
-      api.companies().catch(()=>[]),
+      api.companies(undefined,periodToDays(companyPeriod)).catch(()=>[]),
     ]).then(([d,c,s,st,co])=>{
       setAllDeals(d.deals||[]);
       setClusters(c);
@@ -216,6 +227,18 @@ function Dash({go,setTicker}){
       setLoading(false);
     });
   },[]);
+
+  useEffect(()=>{
+    if(loading)return;
+    setSectorsLoading(true);
+    api.sectors(periodToDays(sectorPeriod)).then(s=>{setSectors(s);setSectorsLoading(false)}).catch(()=>setSectorsLoading(false));
+  },[sectorPeriod]);
+
+  useEffect(()=>{
+    if(loading)return;
+    setCompaniesLoading(true);
+    api.companies(undefined,periodToDays(companyPeriod)).then(co=>{setCompanies(co);setCompaniesLoading(false)}).catch(()=>setCompaniesLoading(false));
+  },[companyPeriod]);
 
   const cutoff=useMemo(()=>{
     if(period==="All")return null;
@@ -328,8 +351,12 @@ function Dash({go,setTicker}){
 
       {tab==="sectors"&&(
         <div className="rise">
-          <p style={{fontSize:15,color:"var(--g500)",marginBottom:20,lineHeight:1.7,maxWidth:600}}>Which JSE sectors are directors putting their own money into? Green shows buying, red shows selling.</p>
-          {sectors.length===0 ? (
+          <p style={{fontSize:15,color:"var(--g500)",marginBottom:16,lineHeight:1.7,maxWidth:600}}>Which JSE sectors are directors putting their own money into? Green shows buying, red shows selling.</p>
+          <div style={{display:"flex",gap:4,marginBottom:20,alignItems:"center"}}>
+            {["1W","1M","3M","YTD","6M","1Y"].map(p=><button key={p} onClick={()=>setSectorPeriod(p)} style={{padding:"5px 12px",borderRadius:7,border:"none",background:sectorPeriod===p?"var(--g900)":"transparent",color:sectorPeriod===p?"#fff":"var(--g400)",fontSize:11,fontFamily:"var(--mono)",fontWeight:600,cursor:"pointer"}}>{p}</button>)}
+            {sectorsLoading&&<div style={{width:6,height:6,borderRadius:"50%",background:"var(--or)",animation:"pulse 1s infinite",marginLeft:8}}/>}
+          </div>
+          {sectors.length===0&&!sectorsLoading ? (
             <div style={{padding:"40px 0",textAlign:"center",color:"var(--g400)",fontFamily:"var(--mono)",fontSize:13}}>No sector data available yet.</div>
           ) : (
           <div style={{borderTop:"2px solid var(--g900)"}}>
@@ -353,7 +380,11 @@ function Dash({go,setTicker}){
 
       {tab==="companies"&&(
         <div className="rise">
-          <p style={{fontSize:15,color:"var(--g500)",marginBottom:20,lineHeight:1.7,maxWidth:600}}>Browse all JSE companies tracked by Raven. Click any company to see their full director dealing history.</p>
+          <p style={{fontSize:15,color:"var(--g500)",marginBottom:16,lineHeight:1.7,maxWidth:600}}>Browse all JSE companies tracked by Raven. Click any company to see their full director dealing history.</p>
+          <div style={{display:"flex",gap:4,marginBottom:16,alignItems:"center"}}>
+            {["1M","3M","YTD","6M","1Y"].map(p=><button key={p} onClick={()=>setCompanyPeriod(p)} style={{padding:"5px 12px",borderRadius:7,border:"none",background:companyPeriod===p?"var(--g900)":"transparent",color:companyPeriod===p?"#fff":"var(--g400)",fontSize:11,fontFamily:"var(--mono)",fontWeight:600,cursor:"pointer"}}>{p}</button>)}
+            {companiesLoading&&<div style={{width:6,height:6,borderRadius:"50%",background:"var(--or)",animation:"pulse 1s infinite",marginLeft:8}}/>}
+          </div>
           <div style={{marginBottom:16}}>
             <div style={{position:"relative",display:"inline-block"}}>
               <svg style={{position:"absolute",left:11,top:"50%",transform:"translateY(-50%)"}} width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--g400)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
