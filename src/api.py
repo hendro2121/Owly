@@ -612,6 +612,120 @@ async def cleanup_bad_directors(
     return {"status": "done", "deals_deleted": total_deleted}
 
 
+@app.api_route("/api/reparse", methods=["GET", "POST"])
+async def reparse_raw_announcements(
+    secret: str = Query(..., description="CRON_SECRET to authorize"),
+):
+    """
+    Re-parse all raw_announcements with the current parser.
+    Deletes existing deals for those tickers/dates and re-inserts with fixed parsing.
+    Use this to recover data after parser fixes.
+    """
+    expected = os.environ.get("CRON_SECRET", "")
+    if not expected or secret != expected:
+        raise HTTPException(403, "Invalid secret")
+
+    from parser import SENSParser
+    from scraper import SharenetScraper
+    from dataclasses import asdict
+    from companies import JSE_TOP_40
+    import re
+
+    scraper = SharenetScraper()
+    anthropic_key = os.environ.get("ANTHROPIC_API_KEY")
+    parser = SENSParser(anthropic_api_key=anthropic_key)
+    known_companies = {c["ticker"]: c for c in JSE_TOP_40}
+
+    results = {"reparsed": 0, "deals_inserted": 0, "errors": []}
+
+    with get_db() as conn:
+        # Get all raw announcements
+        rows = query(conn, "SELECT id, ticker, company, title, date, url, full_text FROM raw_announcements ORDER BY date DESC")
+
+        for row in rows:
+            try:
+                full_text = row["full_text"]
+                if not full_text:
+                    continue
+
+                # Re-extract ticker from text (parser may have been wrong before)
+                ticker = row["ticker"] or scraper._extract_ticker_from_text(full_text)
+                company = row["company"]
+                if ticker and ticker in known_companies:
+                    company = known_companies[ticker]["name"]
+
+                # Ensure company exists
+                if ticker:
+                    sector = known_companies.get(ticker, {}).get("sector", "")
+                    with conn.cursor() as cur:
+                        cur.execute(
+                            "INSERT INTO companies (ticker, name, sector) "
+                            "VALUES (%s, %s, %s) ON CONFLICT (ticker) DO NOTHING",
+                            (ticker, company or ticker, sector),
+                        )
+                    conn.commit()
+
+                # Parse
+                deals = parser.parse(full_text, ticker=ticker, company=company)
+                deals = [d for d in deals if d.transaction_type in ("Buy", "Sell", "Vesting", "TaxSale", "OptionsExercise")]
+
+                for deal in deals:
+                    deal_dict = asdict(deal)
+                    deal_dict["ticker"] = ticker
+                    deal_dict["company"] = company
+                    deal_dict["announcement_date"] = str(row["date"]) if row["date"] else None
+                    deal_dict["source_url"] = row["url"]
+
+                    # Skip if duplicate already exists
+                    with conn.cursor() as cur:
+                        cur.execute("""
+                            SELECT id FROM director_deals
+                            WHERE ticker=%s AND director=%s AND transaction_date=%s
+                              AND shares=%s AND transaction_type=%s
+                        """, (
+                            deal_dict["ticker"], deal_dict["director"],
+                            deal_dict["transaction_date"] or None,
+                            deal_dict["shares"], deal_dict["transaction_type"],
+                        ))
+                        if cur.fetchone():
+                            continue
+
+                        cur.execute("""
+                            INSERT INTO director_deals
+                            (ticker, company, director, role, transaction_date, announcement_date,
+                             transaction_type, shares, price, value, class_of_securities,
+                             nature_of_interest, clearance_received, source_url, confidence,
+                             currency, exchange)
+                            VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
+                        """, (
+                            deal_dict["ticker"], deal_dict["company"],
+                            deal_dict["director"], deal_dict["role"],
+                            deal_dict["transaction_date"] or None,
+                            deal_dict.get("announcement_date") or None,
+                            deal_dict["transaction_type"], deal_dict["shares"],
+                            deal_dict["price"], deal_dict["value"],
+                            deal_dict["class_of_securities"],
+                            deal_dict["nature_of_interest"],
+                            deal_dict["clearance_received"],
+                            deal_dict.get("source_url", ""),
+                            deal_dict["confidence"],
+                            deal_dict.get("currency", "ZAR"),
+                            deal_dict.get("exchange", "JSE"),
+                        ))
+                        results["deals_inserted"] += 1
+                    conn.commit()
+
+                results["reparsed"] += 1
+            except Exception as e:
+                results["errors"].append(f"{row.get('ticker','?')}: {str(e)}")
+                try:
+                    conn.rollback()
+                except Exception:
+                    pass
+
+    return results
+
+
 @app.get("/api/debug/scrape-test")
 async def debug_scrape_test(
     secret: str = Query(..., description="CRON_SECRET to authorize"),
