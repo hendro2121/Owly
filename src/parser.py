@@ -550,6 +550,25 @@ class RegexParser:
                 parts = [p.strip() for p in parts if p.strip()]
                 if len(parts) > 1:
                     return parts
+
+            # Hudaco style: "Transaction 1 - Acquisition" / "Transaction 2 - Sale"
+            numbered_tx = re.findall(
+                r'Transaction\s+(\d+)\s*[\-–—]',
+                text, re.IGNORECASE
+            )
+            if len(numbered_tx) >= 2:
+                split_pattern = r'(?=(?:^|\n)\s*Transaction\s+(?:[2-9]|\d{2,})\s*[\-–—])'
+                parts = re.split(split_pattern, text, flags=re.IGNORECASE | re.MULTILINE)
+                parts = [p.strip() for p in parts if p.strip()]
+                if len(parts) > 1:
+                    # Prepend header (director info before Transaction 1) to each block
+                    header_match = re.search(r'(?i)Transaction\s+1\s*[\-–—]', parts[0])
+                    if header_match:
+                        header = parts[0][:header_match.start()].strip()
+                        if header:
+                            return [parts[0]] + [header + "\n" + p for p in parts[1:]]
+                    return parts
+
             return [text]  # Only one or zero dates — don't split
 
         # Split on the second and subsequent date lines
