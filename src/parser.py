@@ -95,28 +95,34 @@ PATTERNS = {
         # "Date of transaction : 12 March 2026" / "Date of transaction 1: 20 March 2026" (Hudaco numbered)
         # "Date of the transaction : 20 March 2026" (UK MAR format)
         r"(?:Date\s+(?:of\s+)?(?:the\s+)?transaction(?:s)?(?:\s+\d+)?(?:\s+effected)?)\s*[:\-]?\s*(.+?)(?:\n|$)",
+        # "Date of dealing : 16 March 2026" (KAL style — no numbered suffix)
+        r"(?:Date\s+(?:of\s+)?(?:the\s+)?dealing)\s*[:\-]?\s*(.+?)(?:\n|$)",
         # "Transaction date : 11 March 2026" / "Transaction date             20 March 2026"
         r"(?:Transaction\s+date)\s*[:\-]?\s*(.+?)(?:\n|$)",
         r"(?:^|\n)\s*Transaction\s+date\s{2,}(.+?)(?:\n|$)",
         # "Date of transaction             11 March 2026" (space-separated)
         r"(?:^|\n)\s*Date\s+of\s+(?:the\s+)?transaction(?:\s+\d+)?\s{2,}(.+?)(?:\n|$)",
-        # "DATE OF TRANSACTION" (uppercase, Argent)
-        r"DATE\s+OF\s+TRANSACTION\s+(.+?)(?:\n|$)",
+        r"(?:^|\n)\s*Date\s+of\s+(?:the\s+)?dealing\s{2,}(.+?)(?:\n|$)",
+        # "DATE OF TRANSACTION" / "DATE OF DEALING" (uppercase, Argent/KAL)
+        r"DATE\s+OF\s+(?:TRANSACTION|DEALING)\s+(.+?)(?:\n|$)",
     ],
     "transaction_type": [
         # "Nature of transaction : On-market purchase" / "Nature of transaction 1: Acquisition..."
         # "Nature of the transaction: Acquisition" (UK MAR format)
         # Allow multi-line capture for continuation lines (HCI style wraps across lines)
         r"(?:Nature\s+of\s+(?:the\s+)?transaction(?:s)?(?:\s+\d+)?)\s*[:\-]?\s*(.+(?:\n\s{20,}.+)*)",
+        # "Nature of dealing: Purchase..." (KAL style — no numbered suffix)
+        r"(?:Nature\s+of\s+(?:the\s+)?dealing)\s*[:\-]?\s*(.+(?:\n\s{20,}.+)*)",
         # "Nature of transaction             On market purchase" (space-separated, multi-line)
         r"(?:^|\n)\s*Nature\s+of\s+(?:the\s+)?transaction(?:\s+\d+)?\s{2,}(.+(?:\n\s{20,}.+)*)",
+        r"(?:^|\n)\s*Nature\s+of\s+(?:the\s+)?dealing\s{2,}(.+(?:\n\s{20,}.+)*)",
         r"(?:Type\s+of\s+transaction)\s*[:\-]?\s*(.+?)(?:\n|$)",
-        r"NATURE\s+OF\s+TRANSACTION\s+(.+?)(?:\n|$)",
+        r"NATURE\s+OF\s+(?:TRANSACTION|DEALING)\s+(.+?)(?:\n|$)",
     ],
     "shares": [
-        # "Number of securities : 992 906" / "NUMBER OF SECURITIES TRANSACTED  1,200"
-        r"(?:Number\s+of\s+(?:(?:ordinary\s+)?shares|securities)(?:\s*/\s*volume)?(?:\s+(?:purchased|sold|disposed|transacted))?)\s*[:\-]?\s*([\d\s,]+)",
-        r"NUMBER\s+OF\s+SECURITIES\s+TRANSACTED\s+([\d\s,]+)",
+        # "Number of securities : 992 906" / "NUMBER OF SECURITIES TRANSACTED  1,200" / "NUMBER OF SECURITIES TRADED  1 400"
+        r"(?:Number\s+of\s+(?:(?:ordinary\s+)?shares|securities)(?:\s*/\s*volume)?(?:\s+(?:purchased|sold|disposed|transacted|traded))?)\s*[:\-]?\s*([\d\s,]+)",
+        r"NUMBER\s+OF\s+SECURITIES\s+(?:TRANSACTED|TRADED)\s+([\d\s,]+)",
         # Prose: "Acquisition of 5,700 shares" / "Sale of 6 761 Hudaco ordinary shares"
         r"(?:Acquisition|Sale|Disposal|Purchase)\s+of\s+([\d][\d\s,]*\d)\s+(?:\w+\s+)*?(?:ordinary\s+)?shares",
         # fallback: "1,200 ordinary shares"
@@ -141,8 +147,8 @@ PATTERNS = {
     "value": [
         # "Total value : ZAR 7 847 631.15" / "Total value: R286 679.07"
         r"(?:Total\s+value(?:\s+of\s+(?:the\s+)?(?:transactions?|securities))?)\s*[:\-]?\s*(?:R|ZAR|GBP)?\s*([\d\s,\.]+)",
-        # "TOTAL RAND VALUE OF SECURITIES TRANSACTED  R39,732"
-        r"TOTAL\s+RAND\s+VALUE\s+OF\s+SECURITIES\s+(?:TRANSACTED\s+)?(?:R|ZAR|GBP)?\s*([\d\s,\.]+)",
+        # "TOTAL RAND VALUE OF SECURITIES TRANSACTED  R39,732" / "TOTAL RAND VALUE OF SECURITIES TRADED  R62,286.00"
+        r"TOTAL\s+RAND\s+VALUE\s+OF\s+SECURITIES\s+(?:(?:TRANSACTED|TRADED)\s+)?(?:R|ZAR|GBP)?\s*([\d\s,\.]+)",
         # "Value of the transaction : R10,568,357.02" / "Value of transaction 1: R2 931 309.89" (Hudaco numbered)
         r"(?:(?:Total\s+)?[Vv]alue\s+of\s+(?:the\s+)?transactions?(?:\s+\d+)?)\s*[:\-]?\s*(?:R|ZAR|GBP)?\s*([\d\s,\.]+)",
         # "Aggregated information: Acquisition value of GBP7,478.40" (UK MAR)
