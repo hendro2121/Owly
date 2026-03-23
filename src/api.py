@@ -738,6 +738,113 @@ async def reparse_raw_announcements(
     return results
 
 
+@app.api_route("/api/ingest-url", methods=["GET", "POST"])
+async def ingest_url(
+    secret: str = Query(..., description="CRON_SECRET to authorize"),
+    url: str = Query(..., description="Sharenet SENS article URL to ingest"),
+    ticker: str = Query("", description="JSE ticker code"),
+    company: str = Query("", description="Company name"),
+    date: str = Query("", description="Announcement date YYYY-MM-DD"),
+):
+    """Manually ingest a SENS announcement from its Sharenet URL."""
+    expected = os.environ.get("CRON_SECRET", "")
+    if not expected or secret != expected:
+        raise HTTPException(403, "Invalid secret")
+
+    from scraper import SharenetScraper
+    from parser import SENSParser
+    from dataclasses import asdict
+
+    scraper = SharenetScraper()
+    full_text = scraper.extract(url)
+    if not full_text:
+        return {"error": "Could not fetch announcement text from URL"}
+
+    # Extract ticker from text if not provided
+    if not ticker:
+        ticker = scraper._extract_ticker_from_text(full_text)
+    if not ticker:
+        return {"error": "Could not determine ticker — provide it via ?ticker=XXX"}
+
+    parser = SENSParser(anthropic_api_key=os.environ.get("ANTHROPIC_API_KEY"))
+    deals = parser.parse(full_text, ticker=ticker, company=company)
+    deals = [d for d in deals if d.transaction_type in ("Buy", "Sell")]
+
+    results = {"ticker": ticker, "company": company, "deals_inserted": 0, "deals_found": len(deals)}
+
+    with get_db() as conn:
+        # Ensure company exists
+        if ticker:
+            with conn.cursor() as cur:
+                cur.execute(
+                    "INSERT INTO companies (ticker, name, sector) "
+                    "VALUES (%s, %s, %s) ON CONFLICT (ticker) DO NOTHING",
+                    (ticker, company or ticker, ""),
+                )
+            conn.commit()
+
+        # Store raw announcement
+        with conn.cursor() as cur:
+            cur.execute("""
+                INSERT INTO raw_announcements (ticker, company, title, date, url, full_text, source)
+                VALUES (%s, %s, %s, %s, %s, %s, %s) ON CONFLICT (url) DO NOTHING
+            """, (ticker, company, f"Manual ingest: {ticker}", date or None, url, full_text, "sharenet"))
+        conn.commit()
+
+        # Store parsed deals
+        for deal in deals:
+            deal_dict = asdict(deal)
+            deal_dict["ticker"] = ticker
+            deal_dict["company"] = company or ticker
+            deal_dict["announcement_date"] = date or None
+            deal_dict["source_url"] = url
+            deal_dict.setdefault("currency", "ZAR")
+            deal_dict.setdefault("exchange", "JSE")
+
+            tx_date = deal_dict["transaction_date"] or None
+            if tx_date:
+                import re as _re
+                if not _re.match(r'^\d{4}-\d{2}-\d{2}$', str(tx_date)):
+                    tx_date = None
+
+            with conn.cursor() as cur:
+                cur.execute("""
+                    SELECT id FROM director_deals
+                    WHERE ticker=%s AND director=%s
+                      AND (transaction_date=%s OR (transaction_date IS NULL AND %s IS NULL))
+                      AND shares=%s AND transaction_type=%s
+                """, (deal_dict["ticker"], deal_dict["director"], tx_date, tx_date,
+                      deal_dict["shares"], deal_dict["transaction_type"]))
+                if cur.fetchone():
+                    continue
+
+                cur.execute("""
+                    INSERT INTO director_deals
+                    (ticker, company, director, role, transaction_date, announcement_date,
+                     transaction_type, shares, price, value, class_of_securities,
+                     nature_of_interest, clearance_received, source_url, confidence,
+                     currency, exchange)
+                    VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
+                """, (
+                    deal_dict["ticker"], deal_dict["company"],
+                    deal_dict["director"], deal_dict["role"],
+                    tx_date, deal_dict.get("announcement_date"),
+                    deal_dict["transaction_type"], deal_dict["shares"],
+                    deal_dict["price"], deal_dict["value"],
+                    deal_dict["class_of_securities"],
+                    deal_dict["nature_of_interest"],
+                    deal_dict["clearance_received"],
+                    deal_dict.get("source_url", ""),
+                    deal_dict["confidence"],
+                    deal_dict.get("currency", "ZAR"),
+                    deal_dict.get("exchange", "JSE"),
+                ))
+                results["deals_inserted"] += 1
+        conn.commit()
+
+    return results
+
+
 @app.get("/api/debug/scrape-test")
 async def debug_scrape_test(
     secret: str = Query(..., description="CRON_SECRET to authorize"),
