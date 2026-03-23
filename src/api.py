@@ -676,15 +676,23 @@ async def reparse_raw_announcements(
                     deal_dict["announcement_date"] = str(row["date"]) if row["date"] else None
                     deal_dict["source_url"] = row["url"]
 
+                    # Validate date before using in query
+                    tx_date = deal_dict["transaction_date"] or None
+                    if tx_date:
+                        import re as _re
+                        if not _re.match(r'^\d{4}-\d{2}-\d{2}$', str(tx_date)):
+                            tx_date = None  # Invalid date format, set to NULL
+
                     # Skip if duplicate already exists
                     with conn.cursor() as cur:
                         cur.execute("""
                             SELECT id FROM director_deals
-                            WHERE ticker=%s AND director=%s AND transaction_date=%s
+                            WHERE ticker=%s AND director=%s
+                              AND (transaction_date=%s OR (transaction_date IS NULL AND %s IS NULL))
                               AND shares=%s AND transaction_type=%s
                         """, (
                             deal_dict["ticker"], deal_dict["director"],
-                            deal_dict["transaction_date"] or None,
+                            tx_date, tx_date,
                             deal_dict["shares"], deal_dict["transaction_type"],
                         ))
                         if cur.fetchone():
@@ -700,7 +708,7 @@ async def reparse_raw_announcements(
                         """, (
                             deal_dict["ticker"], deal_dict["company"],
                             deal_dict["director"], deal_dict["role"],
-                            deal_dict["transaction_date"] or None,
+                            tx_date,
                             deal_dict.get("announcement_date") or None,
                             deal_dict["transaction_type"], deal_dict["shares"],
                             deal_dict["price"], deal_dict["value"],
