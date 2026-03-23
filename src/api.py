@@ -495,6 +495,8 @@ async def refresh_endpoint(
             bad_patterns = [
                 "Dealings in securities%", "Directors' Dealings%", "Directors Dealings%",
                 "Dealing in securities%", "Dealing In %",
+                "%person discharging managerial%",
+                "%managerial responsibilities%",
             ]
             with get_db() as conn:
                 with conn.cursor() as cur:
@@ -602,6 +604,8 @@ async def cleanup_bad_directors(
         "Directors Dealings%",
         "Dealing in securities%",
         "Dealing In %",
+        "%person discharging managerial%",
+        "%managerial responsibilities%",
     ]
 
     with get_db() as conn:

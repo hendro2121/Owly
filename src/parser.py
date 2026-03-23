@@ -62,12 +62,15 @@ PATTERNS = {
     "director_name": [
         # MOST SPECIFIC patterns first (longer matches before shorter)
 
+        # EU MAR / PDMR format: "Name of director / person discharging managerial responsibilities: Andre van der Veer"
+        # Strip the PDMR label and capture only the actual name after it
+        r"(?:Name\s+of\s+(?:the\s+)?(?:director|PDMR)\s*/\s*person\s+discharging\s+managerial\s+responsibilities)\s*[:\-]?\s*(.+?)(?:\n|$)",
         # "Name of director and relationship to associate: Desmond de Beer is a beneficiary..."
         # Extract just the person name (before "is a" / "is the" / "," / "who")
         r"(?:Name\s+of\s+director\s+and\s+relationship\s+to\s+associate)\s*[:\-]?\s*([A-Z][a-z]+(?:\s+(?:de\s+|van\s+|der\s+|le\s+|du\s+)?[A-Za-z]+)*?)(?:\s+is\s+|\s*,|\s+who\s+)",
         # "Name of director : John Smith" / "NAME OF DIRECTOR  John Smith"
-        # Negative lookahead: don't match "Name of director and relationship"
-        r"(?:Name\s+of\s+(?:the\s+)?(?:director|executive\s+director))(?!\s+and\s+relationship)\s*[:\-]?\s*(.+?)(?:\n|$)",
+        # Negative lookahead: don't match "Name of director and relationship" or "Name of director / person"
+        r"(?:Name\s+of\s+(?:the\s+)?(?:director|executive\s+director))(?!\s+and\s+relationship)(?!\s*/\s*person)\s*[:\-]?\s*(.+?)(?:\n|$)",
         # "Director : Mark Sorour" / "Director  Mark Sorour"
         r"(?:^|\n)\s*Director\s*[:\-]\s*(.+?)(?:\n|$)",
         # "Name: John Smith" (Grindrod style) / "Name                C Keyter" (Sibanye — spaces as separator)
@@ -450,6 +453,26 @@ def classify_interest(text: str) -> str:
     return "Unknown"
 
 
+def clean_director_name(name: str) -> str:
+    """Clean up a raw director name — strip PDMR labels, trailing clauses, punctuation."""
+    if not name:
+        return name
+    # Strip EU MAR "/ person discharging managerial responsibilities" label
+    name = re.sub(r'^[/\s]*person\s+discharging\s+managerial\s+responsibilities\s*[:\-]?\s*', '', name, flags=re.IGNORECASE).strip()
+    # Strip "who is the sole member of..." / "who is a director of..." trailing clauses
+    name = re.sub(r',?\s+who\s+is\s+.*$', '', name, flags=re.IGNORECASE).strip()
+    # Strip "is a beneficiary..." / "is the sole member..." trailing clauses
+    name = re.sub(r',?\s+is\s+(?:a|the)\s+.*$', '', name, flags=re.IGNORECASE).strip()
+    # Remove parenthetical suffixes like (Pty) Ltd
+    name = re.sub(r'\s*\(.*?\)\s*$', '', name).strip()
+    # Remove trailing comma
+    name = re.sub(r',\s*$', '', name).strip()
+    # If it still looks like a label (contains "dealing" or "securities"), reject it
+    if re.search(r'(?:dealing|securities|announcement|managerial)', name, re.IGNORECASE):
+        return ""
+    return name
+
+
 # ─── Regex Parser ────────────────────────────────────────────────────────────
 
 class RegexParser:
@@ -697,9 +720,10 @@ class RegexParser:
                 if not director:
                     continue  # Can't identify director, skip
 
-            # Clean director name — remove trailing junk
-            director = re.sub(r'\s*\(.*?\)\s*$', '', director).strip()  # Remove (Pty) Ltd etc in parentheses
-            director = re.sub(r',\s*$', '', director).strip()
+            # Clean director name — remove PDMR labels, trailing junk
+            director = clean_director_name(director)
+            if not director:
+                continue
 
             role = self._extract(block, "role") or self._extract(text, "role") or "Director"
 
@@ -730,7 +754,8 @@ class RegexParser:
         if not deals:
             director = self._extract(text, "director_name")
             if director:
-                director = re.sub(r'\s*\(.*?\)\s*$', '', director).strip()
+                director = clean_director_name(director)
+            if director:
                 role = self._extract(text, "role") or "Director"
                 deal = self._make_deal(
                     text, director, role,
