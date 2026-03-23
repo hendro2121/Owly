@@ -467,8 +467,8 @@ def clean_director_name(name: str) -> str:
     name = re.sub(r'\s*\(.*?\)\s*$', '', name).strip()
     # Remove trailing comma
     name = re.sub(r',\s*$', '', name).strip()
-    # If it still looks like a label (contains "dealing" or "securities"), reject it
-    if re.search(r'(?:dealing|securities|announcement|managerial)', name, re.IGNORECASE):
+    # If it still looks like a label/boilerplate, reject it
+    if re.search(r'(?:dealing|securities|announcement|managerial|initial\s+notification|according\s+to\s+MAR)', name, re.IGNORECASE):
         return ""
     return name
 

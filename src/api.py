@@ -497,6 +497,8 @@ async def refresh_endpoint(
                 "Dealing in securities%", "Dealing In %",
                 "%person discharging managerial%",
                 "%managerial responsibilities%",
+                "Initial notification%",
+                "%according to MAR%",
             ]
             with get_db() as conn:
                 with conn.cursor() as cur:
