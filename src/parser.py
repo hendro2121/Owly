@@ -427,6 +427,8 @@ def detect_exchange(text: str) -> str:
         place = match.group(1).lower()
         if "london" in place or "lse" in place:
             return "LSE"
+        if "amsterdam" in place or "euronext" in place or "ams" in place:
+            return "AMS"
         if "new york" in place or "nyse" in place:
             return "NYSE"
         if "nasdaq" in place:
@@ -437,9 +439,11 @@ def detect_exchange(text: str) -> str:
             return "JSE"
     # "On-market" combined with LSE share code suggests LSE
     if re.search(r'share\s+code\s+on\s+lse', lower):
-        # Check if the trade price is in GBP — that confirms LSE execution
         if re.search(r'(?:GBP|£)\s*[\d,.]', text):
             return "LSE"
+    # EUR currency with no explicit JSE mention → likely Euronext Amsterdam
+    if re.search(r'(?:EUR|€)\s*[\d,.]', text) and 'jse' not in lower:
+        return "AMS"
     return "JSE"
 
 
