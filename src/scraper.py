@@ -80,6 +80,8 @@ DEALING_KEYWORDS = [
     "director dealing",
     "directors' dealings",
     "director's dealing",
+    "pdmr notification",
+    "pdmr dealing",
 ]
 
 # Announcements matching these keywords should be excluded — they're corporate
@@ -92,6 +94,8 @@ EXCLUDE_KEYWORDS = [
     "share purchase trust",
     "major subsidiary",
     "staff share",
+    "performance share plan",
+    "share award",
 ]
 
 
@@ -217,9 +221,16 @@ class SharenetScraper:
         )
         if match:
             return match.group(1).upper()
-        # Standard: "JSE share code: NPN" / "Share code: HCI"
+        # Standard: "JSE share code: NPN" / "JSE Share Code: HCI"
         match = re.search(
-            r'(?:JSE\s+(?:share\s+)?code|Share\s+code)\s*[:\s]\s*([A-Z]{2,5})',
+            r'JSE\s+(?:share\s+)?code\s*[:\s]\s*([A-Z]{2,5})',
+            text, re.IGNORECASE
+        )
+        if match:
+            return match.group(1).upper()
+        # Generic "Share code: XYZ" (but NOT "LSE Share Code")
+        match = re.search(
+            r'(?<!LSE\s)Share\s+code\s*:\s*([A-Z]{2,5})',
             text, re.IGNORECASE
         )
         if match:

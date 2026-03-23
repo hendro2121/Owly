@@ -500,8 +500,12 @@ async def refresh_endpoint(
                 with conn.cursor() as cur:
                     for pattern in bad_patterns:
                         cur.execute("DELETE FROM director_deals WHERE director ILIKE %s", (pattern,))
+                    # Clean up bogus tickers (e.g. "ON" from bad extraction)
+                    cur.execute("DELETE FROM director_deals WHERE ticker = 'ON'")
+                    cur.execute("DELETE FROM raw_announcements WHERE ticker = 'ON'")
+                    cur.execute("DELETE FROM companies WHERE ticker = 'ON' AND name NOT ILIKE '%%ON%%'")
                 conn.commit()
-                logger.info("Cleaned up bad director name records")
+                logger.info("Cleaned up bad director name records and bogus tickers")
 
             run_pipeline()
             logger.info("Refresh complete")
