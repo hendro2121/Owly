@@ -48,6 +48,8 @@ class ParsedDeal:
     nature_of_interest: str     # Direct / Indirect
     clearance_received: bool
     confidence: float           # 0-1
+    currency: str = "ZAR"       # ZAR / GBP / USD / EUR
+    exchange: str = "JSE"       # JSE / LSE / ASX / NYSE etc.
 
 
 # ─── Regex Patterns ──────────────────────────────────────────────────────────
@@ -73,35 +75,41 @@ PATTERNS = {
         r"Name\s{2,}(\S.+?)(?:\n|$)",
         # "NAME OF DIRECTOR  John Smith" (Argent uppercase)
         r"NAME\s+OF\s+DIRECTOR\s+(.+?)(?:\n|$)",
-        # "A) Name: PIETER" / "B) Name: ANTON" / "1. Name: PIETER"
-        r"(?:^|\n)\s*(?:[A-Z]\)|[0-9]+[\.\)])\s*Name\s*[:\-]?\s*(.+?)(?:\n|$)",
+        # "a) Name: Hendrik Pretorius" / "A) Name: PIETER" / "1. Name: PIETER" (UK MAR and lettered formats)
+        r"(?:^|\n)\s*(?:[A-Za-z]\)|[0-9]+[\.\)])\s*Name\s*[:\-]?\s*(.+?)(?:\n|$)",
         # "Name of associate : Delsa Investments" (Lighthouse style — fallback for associate)
         r"(?:Name\s+of\s+associate(?:\s*/\s*person\s+closely\s+associated)?)\s*[:\-]?\s*(.+?)(?:\n|$)",
+        # Prose: "...by Mr Ditabe Chocho, the Financial Director" (Merafe style — name in paragraph)
+        r"(?:by\s+)((?:Mr|Mrs|Ms|Miss|Dr|Prof|Adv)\.?\s+[A-Z][a-z]+(?:\s+(?:de\s+|van\s+|der\s+|le\s+|du\s+)?[A-Z][a-z]+)+)(?:\s*,|\s+the\s+|\s+who\s+|\s+as\s+|\s+a\s+|\s*\()",
     ],
     "role": [
         r"(?:Office\s+[Hh]eld|Designation|Position|Capacity|Role)\s*[:\-]\s*(.+?)(?:\n|$)",
+        # "Position/status: Executive" (UK MAR format)
+        r"(?:Position\s*/\s*status)\s*[:\-]?\s*(.+?)(?:\n|$)",
         # Sibanye style: "Position                     Executive Director"
         r"(?:^|\n)\s*(?:Position|Designation)\s{2,}(.+?)(?:\n|$)",
         r"(?:STATUS\s*:\s*EXECUTIVE\s*/\s*NON[- ]EXECUTIVE)\s*(.+?)(?:\n|$)",
         r"(?:Company\s+of\s+which\s+a\s+director)\s*(.+?)(?:\n|$)",
     ],
     "transaction_date": [
-        # "Date of transaction : 12 March 2026" / "DATE OF TRANSACTION  12 March 2026"
-        r"(?:Date\s+(?:of\s+)?(?:the\s+)?transaction(?:s)?(?:\s+effected)?)\s*[:\-]?\s*(.+?)(?:\n|$)",
+        # "Date of transaction : 12 March 2026" / "Date of transaction 1: 20 March 2026" (Hudaco numbered)
+        # "Date of the transaction : 20 March 2026" (UK MAR format)
+        r"(?:Date\s+(?:of\s+)?(?:the\s+)?transaction(?:s)?(?:\s+\d+)?(?:\s+effected)?)\s*[:\-]?\s*(.+?)(?:\n|$)",
         # "Transaction date : 11 March 2026" / "Transaction date             20 March 2026"
         r"(?:Transaction\s+date)\s*[:\-]?\s*(.+?)(?:\n|$)",
         r"(?:^|\n)\s*Transaction\s+date\s{2,}(.+?)(?:\n|$)",
         # "Date of transaction             11 March 2026" (space-separated)
-        r"(?:^|\n)\s*Date\s+of\s+transaction\s{2,}(.+?)(?:\n|$)",
+        r"(?:^|\n)\s*Date\s+of\s+(?:the\s+)?transaction(?:\s+\d+)?\s{2,}(.+?)(?:\n|$)",
         # "DATE OF TRANSACTION" (uppercase, Argent)
         r"DATE\s+OF\s+TRANSACTION\s+(.+?)(?:\n|$)",
     ],
     "transaction_type": [
-        # "Nature of transaction : On-market purchase" / "NATURE OF TRANSACTION  Purchase"
+        # "Nature of transaction : On-market purchase" / "Nature of transaction 1: Acquisition..."
+        # "Nature of the transaction: Acquisition" (UK MAR format)
         # Allow multi-line capture for continuation lines (HCI style wraps across lines)
-        r"(?:Nature\s+of\s+transaction(?:s)?)\s*[:\-]?\s*(.+(?:\n\s{20,}.+)*)",
+        r"(?:Nature\s+of\s+(?:the\s+)?transaction(?:s)?(?:\s+\d+)?)\s*[:\-]?\s*(.+(?:\n\s{20,}.+)*)",
         # "Nature of transaction             On market purchase" (space-separated, multi-line)
-        r"(?:^|\n)\s*Nature\s+of\s+transaction\s{2,}(.+(?:\n\s{20,}.+)*)",
+        r"(?:^|\n)\s*Nature\s+of\s+(?:the\s+)?transaction(?:\s+\d+)?\s{2,}(.+(?:\n\s{20,}.+)*)",
         r"(?:Type\s+of\s+transaction)\s*[:\-]?\s*(.+?)(?:\n|$)",
         r"NATURE\s+OF\s+TRANSACTION\s+(.+?)(?:\n|$)",
     ],
@@ -109,33 +117,40 @@ PATTERNS = {
         # "Number of securities : 992 906" / "NUMBER OF SECURITIES TRANSACTED  1,200"
         r"(?:Number\s+of\s+(?:(?:ordinary\s+)?shares|securities)(?:\s*/\s*volume)?(?:\s+(?:purchased|sold|disposed|transacted))?)\s*[:\-]?\s*([\d\s,]+)",
         r"NUMBER\s+OF\s+SECURITIES\s+TRANSACTED\s+([\d\s,]+)",
+        # Prose: "Acquisition of 5,700 shares" / "Sale of 6 761 Hudaco ordinary shares"
+        r"(?:Acquisition|Sale|Disposal|Purchase)\s+of\s+([\d][\d\s,]*\d)\s+(?:\w+\s+)*?(?:ordinary\s+)?shares",
         # fallback: "1,200 ordinary shares"
         r"([\d,\s]+)\s+(?:ordinary\s+)?(?:shares|securities)",
     ],
     "price": [
         # "Volume weighted average price per security : R17.2004" / "Weighted average price per security: ZAR 7.9037"
-        r"(?:(?:Volume\s+)?[Ww]eighted\s+average\s+(?:purchase\s+)?price(?:\s+per\s+(?:share|security))?)\s*[:\-]?\s*(?:R|ZAR)?\s*([\d\s,\.]+\s*(?:cps)?)",
+        r"(?:(?:Volume\s+)?[Ww]eighted\s+average\s+(?:purchase\s+)?price(?:\s+per\s+(?:share|security))?)\s*[:\-]?\s*(?:R|ZAR|GBP)?\s*([\d\s,\.]+\s*(?:cps)?)",
         # "Purchase price per share                         16 620 cps"
-        r"(?:(?:Purchase\s+)?[Pp]rice\s+per\s+(?:share|security))\s*[:\-]?\s*(?:R|ZAR)?\s*([\d\s,\.]+\s*(?:cps)?)",
-        r"PRICE\s+PER\s+SECURITY\s+(?:R|ZAR)?\s*([\d\s,\.]+\s*(?:cps)?)",
+        r"(?:(?:Purchase\s+)?[Pp]rice\s+per\s+(?:share|security))\s*[:\-]?\s*(?:R|ZAR|GBP)?\s*([\d\s,\.]+\s*(?:cps)?)",
+        r"PRICE\s+PER\s+SECURITY\s+(?:R|ZAR|GBP)?\s*([\d\s,\.]+\s*(?:cps)?)",
         # "Price per security : ZAR 134.00"
-        r"(?:Price\s+per\s+security)\s*[:\-]?\s*(?:R|ZAR)?\s*([\d\s,\.]+\s*(?:cps)?)",
+        r"(?:Price\s+per\s+security)\s*[:\-]?\s*(?:R|ZAR|GBP)?\s*([\d\s,\.]+\s*(?:cps)?)",
         # "Deemed market price per share" (Gold Fields — value may be on next line)
-        r"(?:Deemed\s+market\s+price\s+per\s+share)\s*[:\-]?\s*(?:R|ZAR)?\s*([\d\s,\.]+\s*(?:cps)?)",
+        r"(?:Deemed\s+market\s+price\s+per\s+share)\s*[:\-]?\s*(?:R|ZAR|GBP)?\s*([\d\s,\.]+\s*(?:cps)?)",
         # "Market price                 R48.99" (Sibanye style)
-        r"(?:Market\s+price)\s*[:\-]?\s*(?:R|ZAR)?\s*([\d\s,\.]+\s*(?:cps)?)",
+        r"(?:Market\s+price)\s*[:\-]?\s*(?:R|ZAR|GBP)?\s*([\d\s,\.]+\s*(?:cps)?)",
+        # Prose: "at GBP1.312 per share" / "at a price of R195.09 per share"
+        r"at\s+(?:a\s+)?(?:(?:an?\s+)?average\s+)?price\s+of\s+(?:R|ZAR|GBP)?\s*([\d\s,\.]+)\s+per\s+share",
+        r"at\s+(?:R|ZAR|GBP)([\d\s,\.]+)\s+per\s+share",
     ],
     "value": [
         # "Total value : ZAR 7 847 631.15" / "Total value: R286 679.07"
-        r"(?:Total\s+value(?:\s+of\s+(?:the\s+)?(?:transaction|securities))?)\s*[:\-]?\s*(?:R|ZAR)?\s*([\d\s,\.]+)",
+        r"(?:Total\s+value(?:\s+of\s+(?:the\s+)?(?:transactions?|securities))?)\s*[:\-]?\s*(?:R|ZAR|GBP)?\s*([\d\s,\.]+)",
         # "TOTAL RAND VALUE OF SECURITIES TRANSACTED  R39,732"
-        r"TOTAL\s+RAND\s+VALUE\s+OF\s+SECURITIES\s+(?:TRANSACTED\s+)?(?:R|ZAR)?\s*([\d\s,\.]+)",
-        # "Value of the transaction : R10,568,357.02"
-        r"(?:(?:Total\s+)?[Vv]alue\s+of\s+(?:the\s+)?transaction(?:\s*\d)?)\s*[:\-]?\s*(?:R|ZAR)?\s*([\d\s,\.]+)",
+        r"TOTAL\s+RAND\s+VALUE\s+OF\s+SECURITIES\s+(?:TRANSACTED\s+)?(?:R|ZAR|GBP)?\s*([\d\s,\.]+)",
+        # "Value of the transaction : R10,568,357.02" / "Value of transaction 1: R2 931 309.89" (Hudaco numbered)
+        r"(?:(?:Total\s+)?[Vv]alue\s+of\s+(?:the\s+)?transactions?(?:\s+\d+)?)\s*[:\-]?\s*(?:R|ZAR|GBP)?\s*([\d\s,\.]+)",
+        # "Aggregated information: Acquisition value of GBP7,478.40" (UK MAR)
+        r"(?:Aggregated\s+information)\s*[:\-]?\s*\w+\s+value\s+of\s+(?:R|ZAR|GBP)?\s*([\d\s,\.]+)",
         # "Deemed market value : R51,721,659.78"
-        r"(?:Deemed\s+market\s+value)\s*[:\-]?\s*(?:R|ZAR)?\s*([\d\s,\.]+)",
+        r"(?:Deemed\s+market\s+value)\s*[:\-]?\s*(?:R|ZAR|GBP)?\s*([\d\s,\.]+)",
         # "Total rand value" / "Total cost"
-        r"(?:Total\s+(?:rand\s+)?(?:value|cost))\s*[:\-]?\s*(?:R|ZAR)?\s*([\d\s,\.]+)",
+        r"(?:Total\s+(?:rand\s+)?(?:value|cost))\s*[:\-]?\s*(?:R|ZAR|GBP)?\s*([\d\s,\.]+)",
     ],
     "class_of_securities": [
         r"(?:(?:Type\s+and\s+)?[Cc]lass\s+of\s+(?:shares|securities)(?:\s*/\s*description[^:]*)?)\s*[:\-]?\s*(.+?)(?:\n|$)",
@@ -144,6 +159,8 @@ PATTERNS = {
     "nature_of_interest": [
         # "Nature and extent of director's interest : Indirect beneficial"
         r"(?:Nature\s+and\s+extent\s+of\s+(?:director'?s?\s+)?interest(?:\s+in\s+the\s+transaction)?)\s*[:\-]?\s*(.+?)(?:\n|$)",
+        # "Nature of interest of executive: Direct beneficial" (UK MAR JSE additional info)
+        r"(?:Nature\s+of\s+interest\s+of\s+(?:executive|director))\s*[:\-]?\s*(.+?)(?:\n|$)",
         # "Nature of interest           Direct and Beneficial" (space-separated)
         r"(?:^|\n)\s*Nature\s+of\s+interest\s{2,}(.+?)(?:\n|$)",
         # "Extent of interest : Direct beneficial"
@@ -159,6 +176,8 @@ PATTERNS = {
         r"(?:Clearance\s+(?:received|obtained))\s*[:\-]?\s*(.+?)(?:\n|$)",
         # "Written clearance to deal received : Yes"
         r"(?:Written\s+clearance\s+to\s+deal\s+(?:received|obtained))\s*[:\-]?\s*(.+?)(?:\n|$)",
+        # "Clearance given in terms of paragraph 6.83..." (UK MAR JSE additional info)
+        r"(?:Clearance\s+given)\s*(?:\s+in\s+terms\s+of[^:]*)?[:\-]?\s*(.+?)(?:\n|$)",
         # "CLEARANCE TO DEAL OBTAINED  Yes"
         r"CLEARANCE\s+TO\s+DEAL\s+(?:RECEIVED|OBTAINED)\s+(.+?)(?:\n|$)",
     ],
@@ -178,7 +197,7 @@ def clean_number(text: str) -> Optional[float]:
     # Check for cps (cents per share) before stripping
     is_cps = "cps" in text.lower()
     # Remove currency prefix and cps suffix
-    text = re.sub(r'^[R\s]+|^ZAR\s*', '', text.strip())
+    text = re.sub(r'^[R\s]+|^ZAR\s*|^GBP\s*', '', text.strip())
     text = re.sub(r'\s*cps.*$', '', text, flags=re.IGNORECASE).strip()
     # If there's a decimal point, preserve it; remove all other non-digit chars
     if '.' in text:
@@ -205,6 +224,8 @@ def parse_date(text: str) -> Optional[str]:
     from datetime import datetime
 
     text = text.strip()
+    # Remove leading numbered prefix like "1:" from "1:              20 March 2026"
+    text = re.sub(r'^\d+\s*:\s*', '', text).strip()
     # Remove trailing junk like ")" or extra text after the date
     text = re.sub(r'\s*\(.*$', '', text)
     text = re.sub(r'\s+and\s+.*$', '', text, flags=re.IGNORECASE)
@@ -250,7 +271,8 @@ def classify_transaction(text: str, llm_fallback: bool = False, api_key: str = N
       - OptionsExercise: Exercise of share options/SARs
       - Conversion: Conversion of securities, rights issues
     """
-    lower = text.lower()
+    # Normalize whitespace (multi-line continuation lines have newlines + spaces)
+    lower = re.sub(r'\s+', ' ', text).lower().strip()
 
     # ── Tier 1: Keyword matching ─────────────────────────────────────────
 
@@ -372,6 +394,46 @@ def _llm_classify_transaction(text: str, api_key: str) -> str:
         return "Unknown"
 
 
+def detect_currency(text: str) -> str:
+    """Detect transaction currency from announcement text."""
+    # Look for explicit currency in price/value fields
+    # GBP patterns: "GBP7,478.40", "at GBP1.312", "£1.312"
+    if re.search(r'(?:GBP|£)\s*[\d,.]', text):
+        # Confirm no ZAR/R prices (dual-listed may mention both)
+        # If we find GBP in price/value context, it's GBP
+        return "GBP"
+    if re.search(r'(?:USD|\$)\s*[\d,.]', text):
+        return "USD"
+    if re.search(r'EUR\s*[\d,.]', text):
+        return "EUR"
+    return "ZAR"
+
+
+def detect_exchange(text: str) -> str:
+    """Detect which exchange the transaction occurred on."""
+    lower = text.lower()
+    # Explicit "Place of the transaction" field (UK MAR format)
+    match = re.search(r'place\s+of\s+(?:the\s+)?transaction\s*[:\-]?\s*(.+?)(?:\n|$)', text, re.IGNORECASE)
+    if match:
+        place = match.group(1).lower()
+        if "london" in place or "lse" in place:
+            return "LSE"
+        if "new york" in place or "nyse" in place:
+            return "NYSE"
+        if "nasdaq" in place:
+            return "NASDAQ"
+        if "asx" in place or "australian" in place:
+            return "ASX"
+        if "jse" in place or "johannesburg" in place:
+            return "JSE"
+    # "On-market" combined with LSE share code suggests LSE
+    if re.search(r'share\s+code\s+on\s+lse', lower):
+        # Check if the trade price is in GBP — that confirms LSE execution
+        if re.search(r'(?:GBP|£)\s*[\d,.]', text):
+            return "LSE"
+    return "JSE"
+
+
 def classify_interest(text: str) -> str:
     """Classify as Direct or Indirect interest."""
     text = text.lower()
@@ -423,13 +485,18 @@ class RegexParser:
         3. Repeated "Name:" or "Name of director:" blocks
         4. Repeated "Transaction date:" blocks (multiple txns for same director)
         """
-        # Strategy 1: Split on lettered/numbered sections "A) Name:", "1. Name:"
+        # Strategy 1: Split on lettered/numbered sections "A) Name:", "a) Name:", "1. Name:"
         lettered = re.split(
-            r'(?:^|\n)\s*(?:[A-Z]\)|[0-9]+[\.\)])\s*(?:Name)\s*[:\-]',
+            r'(?:^|\n)\s*(?:[A-Za-z]\)|[0-9]+[\.\)])\s*(?:Name)\s*[:\-]',
             text, flags=re.IGNORECASE | re.MULTILINE
         )
         if len(lettered) > 1:
-            return lettered[1:]  # First is header
+            # The split removes "A) Name:" labels, so blocks start with the
+            # name value directly. Tag them so parse() knows the first line IS the name.
+            blocks = []
+            for part in lettered[1:]:
+                blocks.append("__LETTERED_NAME__\n" + part)
+            return blocks
 
         # Strategy 2: Split on repeated "Name of director:" or "Name:" or "Name    Person" blocks
         # Look for lines where a new director block starts
@@ -471,6 +538,18 @@ class RegexParser:
         dates_found = re.findall(date_count_pattern, text, re.IGNORECASE)
 
         if len(dates_found) < 2:
+            # Try numbered transaction splitting before giving up
+            # Handles Hudaco-style: "Nature of transaction 1:", "Nature of transaction 2:"
+            numbered_natures = re.findall(
+                r'Nature\s+of\s+(?:the\s+)?transaction\s+(\d+)\s*[:\-]',
+                text, re.IGNORECASE
+            )
+            if len(numbered_natures) >= 2:
+                split_pattern = r'(?=(?:^|\n)\s*Nature\s+of\s+(?:the\s+)?transaction\s+(?:[2-9]|\d{2,})\s*[:\-])'
+                parts = re.split(split_pattern, text, flags=re.IGNORECASE | re.MULTILINE)
+                parts = [p.strip() for p in parts if p.strip()]
+                if len(parts) > 1:
+                    return parts
             return [text]  # Only one or zero dates — don't split
 
         # Split on the second and subsequent date lines
@@ -494,7 +573,8 @@ class RegexParser:
 
     def _make_deal(self, section: str, director: str, role: str,
                    common_date: str, common_type_raw: str, common_class: str,
-                   common_interest: str, common_clearance: str) -> Optional[ParsedDeal]:
+                   common_interest: str, common_clearance: str,
+                   currency: str = "ZAR", exchange: str = "JSE") -> Optional[ParsedDeal]:
         """Build a ParsedDeal from a section of text."""
         date_raw = self._extract(section, "transaction_date") or common_date or ""
         type_raw = self._extract(section, "transaction_type") or common_type_raw or ""
@@ -549,11 +629,17 @@ class RegexParser:
             nature_of_interest=classify_interest(interest_raw or ""),
             clearance_received="yes" in (clearance_raw or "").lower(),
             confidence=round(confidence, 2),
+            currency=currency,
+            exchange=exchange,
         )
 
     def parse(self, text: str) -> list:
         """Parse one SENS announcement into one or more deals."""
         deals = []
+
+        # Detect currency and exchange from the full announcement
+        currency = detect_currency(text)
+        exchange = detect_exchange(text)
 
         # Extract fields common across the entire announcement
         common_date = self._extract(text, "transaction_date")
@@ -567,20 +653,24 @@ class RegexParser:
         blocks = self._split_into_blocks(text)
 
         for block in blocks:
+            # Lettered splits (A) Name:, B) Name:) tag blocks with __LETTERED_NAME__
+            # The first line after the tag IS the director name value
+            from_lettered = block.startswith("__LETTERED_NAME__\n")
+            if from_lettered:
+                block = block[len("__LETTERED_NAME__\n"):]
+
             director = self._extract(block, "director_name")
             if not director:
                 # For single-block announcements, also try the full text
                 if len(blocks) == 1:
                     director = self._extract(text, "director_name")
-                if not director:
-                    # Try to find name at the start of the block
+                if not director and from_lettered:
+                    # From a lettered split — first line is the name value
                     first_line = block.strip().split('\n')[0].strip()
-                    if first_line and len(first_line) < 80 and not any(
-                        kw in first_line.lower() for kw in ['date', 'class', 'nature', 'price', 'total', 'number']
-                    ):
+                    if first_line:
                         director = first_line
-                    else:
-                        continue  # Can't identify director, skip
+                if not director:
+                    continue  # Can't identify director, skip
 
             # Clean director name — remove trailing junk
             director = re.sub(r'\s*\(.*?\)\s*$', '', director).strip()  # Remove (Pty) Ltd etc in parentheses
@@ -597,6 +687,7 @@ class RegexParser:
                         tx_block, director, role,
                         common_date, common_type_raw, common_class,
                         common_interest, common_clearance,
+                        currency, exchange,
                     )
                     if deal and (deal.shares or deal.value):
                         deals.append(deal)
@@ -605,6 +696,7 @@ class RegexParser:
                     block, director, role,
                     common_date, common_type_raw, common_class,
                     common_interest, common_clearance,
+                    currency, exchange,
                 )
                 if deal and (deal.shares or deal.value or deal.price):
                     deals.append(deal)
@@ -619,6 +711,7 @@ class RegexParser:
                     text, director, role,
                     common_date, common_type_raw, common_class,
                     common_interest, common_clearance,
+                    currency, exchange,
                 )
                 if deal and (deal.shares or deal.value or deal.price):
                     deals.append(deal)

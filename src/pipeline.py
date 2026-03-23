@@ -160,8 +160,9 @@ def store_deals(conn, deals):
                     INSERT INTO director_deals
                     (ticker, company, director, role, transaction_date, announcement_date,
                      transaction_type, shares, price, value, class_of_securities,
-                     nature_of_interest, clearance_received, source_url, confidence)
-                    VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
+                     nature_of_interest, clearance_received, source_url, confidence,
+                     currency, exchange)
+                    VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
                 """, (
                     deal["ticker"], deal["company"], deal["director"], deal["role"],
                     deal["transaction_date"] or None, deal.get("announcement_date") or None,
@@ -169,6 +170,7 @@ def store_deals(conn, deals):
                     deal["value"], deal["class_of_securities"],
                     deal["nature_of_interest"], deal["clearance_received"],
                     deal.get("source_url", ""), deal["confidence"],
+                    deal.get("currency", "ZAR"), deal.get("exchange", "JSE"),
                 ))
                 stored += 1
             except Exception as e:
@@ -249,6 +251,9 @@ def run_pipeline(output_format="json"):
             deal_dict["company"] = company
             deal_dict["announcement_date"] = ann.date
             deal_dict["source_url"] = ann.url
+            # currency and exchange come from the parser's detection
+            deal_dict.setdefault("currency", "ZAR")
+            deal_dict.setdefault("exchange", "JSE")
             batch_deals.append(deal_dict)
             all_deals.append(deal_dict)
 

@@ -119,6 +119,22 @@ def ensure_db():
             cur.execute("UPDATE director_deals SET market = 'JSE' WHERE market IS NULL")
             cur.execute("CREATE INDEX IF NOT EXISTS idx_deals_market ON director_deals(market)")
             cur.execute("CREATE INDEX IF NOT EXISTS idx_companies_market ON companies(market)")
+            # Dual-listing support: currency and exchange columns
+            cur.execute("""
+                DO $$ BEGIN
+                    ALTER TABLE director_deals ADD COLUMN currency TEXT DEFAULT 'ZAR';
+                EXCEPTION WHEN duplicate_column THEN NULL;
+                END $$
+            """)
+            cur.execute("""
+                DO $$ BEGIN
+                    ALTER TABLE director_deals ADD COLUMN exchange TEXT DEFAULT 'JSE';
+                EXCEPTION WHEN duplicate_column THEN NULL;
+                END $$
+            """)
+            cur.execute("UPDATE director_deals SET currency = 'ZAR' WHERE currency IS NULL")
+            cur.execute("UPDATE director_deals SET exchange = 'JSE' WHERE exchange IS NULL AND market = 'JSE'")
+            cur.execute("UPDATE director_deals SET exchange = 'B3' WHERE exchange IS NULL AND market = 'B3'")
         conn.commit()
         logger.info("PostgreSQL tables ready")
 
@@ -132,6 +148,7 @@ class DealResponse(BaseModel):
     value: Optional[float]=None; nature_of_interest: Optional[str]=None
     confidence: Optional[float]=None; source_url: Optional[str]=None
     market: Optional[str]="JSE"
+    currency: Optional[str]="ZAR"; exchange: Optional[str]="JSE"
 
 class PaginatedDeals(BaseModel):
     deals: list[DealResponse]; total: int; page: int; per_page: int; pages: int
@@ -474,6 +491,18 @@ async def refresh_endpoint(
 
     def _run():
         try:
+            # Clean up any deals with bad director names (announcement titles instead of person names)
+            bad_patterns = [
+                "Dealings in securities%", "Directors' Dealings%", "Directors Dealings%",
+                "Dealing in securities%", "Dealing In %",
+            ]
+            with get_db() as conn:
+                with conn.cursor() as cur:
+                    for pattern in bad_patterns:
+                        cur.execute("DELETE FROM director_deals WHERE director ILIKE %s", (pattern,))
+                conn.commit()
+                logger.info("Cleaned up bad director name records")
+
             run_pipeline()
             logger.info("Refresh complete")
         except Exception as e:
@@ -546,6 +575,41 @@ async def brazil_backfill(
 
     threading.Thread(target=_run, daemon=True).start()
     return {"status": "started", "years": [year] if year else list(range(2018, 2027))}
+
+
+@app.api_route("/api/cleanup/bad-directors", methods=["GET", "POST"])
+async def cleanup_bad_directors(
+    secret: str = Query(..., description="CRON_SECRET to authorize"),
+):
+    """
+    Delete deals where the director name is actually an announcement title
+    (e.g. 'Dealings in securities by...', 'Directors' Dealings').
+    Also delete deals from excluded categories (share trust, major subsidiary).
+    """
+    expected = os.environ.get("CRON_SECRET", "")
+    if not expected or secret != expected:
+        raise HTTPException(403, "Invalid secret")
+
+    bad_patterns = [
+        "Dealings in securities%",
+        "Directors' Dealings%",
+        "Directors Dealings%",
+        "Dealing in securities%",
+        "Dealing In %",
+    ]
+
+    with get_db() as conn:
+        total_deleted = 0
+        with conn.cursor() as cur:
+            for pattern in bad_patterns:
+                cur.execute(
+                    "DELETE FROM director_deals WHERE director ILIKE %s",
+                    (pattern,)
+                )
+                total_deleted += cur.rowcount
+        conn.commit()
+
+    return {"status": "done", "deals_deleted": total_deleted}
 
 
 @app.get("/api/debug/scrape-test")

@@ -1,7 +1,8 @@
 import { useState, useMemo, useEffect } from "react";
 import api from "./api";
 
-const fmtCur=(v,market)=>{const p=market==="B3"?"R$":"R";if(!v)return p+"0";if(v>=1e9)return p+(v/1e9).toFixed(1)+"bn";if(v>=1e6)return p+(v/1e6).toFixed(1)+"m";if(v>=1e3)return p+(v/1e3).toFixed(0)+"k";return p+Math.round(v)};
+const curSymbol=(c)=>({GBP:"£",USD:"$",EUR:"€",BRL:"R$",ZAR:"R"}[c]||"R");
+const fmtCur=(v,market,currency)=>{const p=currency?curSymbol(currency):market==="B3"?"R$":"R";if(!v)return p+"0";if(v>=1e9)return p+(v/1e9).toFixed(1)+"bn";if(v>=1e6)return p+(v/1e6).toFixed(1)+"m";if(v>=1e3)return p+(v/1e3).toFixed(0)+"k";return p+Math.round(v)};
 const fmt={zar:v=>fmtCur(v,"JSE"),num:n=>(n||0).toLocaleString("en-ZA"),d:d=>d?new Date(d).toLocaleDateString("en-ZA",{day:"numeric",month:"short",year:"numeric"}):"",full:d=>d?new Date(d).toLocaleDateString("en-ZA",{day:"numeric",month:"long",year:"numeric"}):""};
 
 // Geometric Raven Logo SVG
@@ -140,7 +141,7 @@ function Landing({go}){
                 <span style={{color:"var(--g500)",fontSize:14}}>{d.director}</span>
                 <span style={{color:"var(--g300)",fontSize:11,fontFamily:"var(--mono)"}}>{d.role}</span>
               </div>
-              <span style={{fontFamily:"var(--mono)",fontSize:14,fontWeight:700,color:d.transaction_type==="Buy"?"var(--gn)":"var(--rd)"}}>{fmtCur(d.value,d.market||"JSE")}</span>
+              <span style={{fontFamily:"var(--mono)",fontSize:14,fontWeight:700,color:d.transaction_type==="Buy"?"var(--gn)":"var(--rd)"}}>{fmtCur(d.value,d.market||"JSE",d.currency)}</span>
             </div>
           ))}
         </div>
@@ -269,7 +270,7 @@ function Dash({go,setTicker}){
   const sv=stats?stats.sell_value:allDeals.filter(d=>d.transaction_type==="Sell").reduce((s,d)=>s+(d.value||0),0);
   const clusterCount=stats?stats.cluster_count:clusters.length;
   const cur=v=>fmtCur(v,market||"JSE");
-  const dealCur=(v,d)=>fmtCur(v,d&&d.market||market||"JSE");
+  const dealCur=(v,d)=>fmtCur(v,d&&d.market||market||"JSE",d&&d.currency);
 
   const maxS=Math.max(...sectors.map(s=>Math.max(s.buy_value||0,s.sell_value||0)),1);
   const pill=(l,a,fn,ac)=><button onClick={fn} style={{padding:"6px 14px",borderRadius:8,border:"1.5px solid "+(a?(ac||"var(--g900)"):"var(--g200)"),background:a?(ac||"var(--g900)"):"var(--white)",color:a?"#fff":"var(--g500)",fontSize:12,fontWeight:600,cursor:"pointer",fontFamily:ac?"var(--mono)":"var(--f)"}}>{l}</button>;
@@ -326,11 +327,11 @@ function Dash({go,setTicker}){
               {fd.map((d,i)=>(
                 <div key={d.id||i} onClick={()=>{setTicker(d.ticker);go("company")}} style={{display:"grid",gridTemplateColumns:"72px 1.4fr 1.2fr 68px 90px 90px 90px",padding:"13px 0",borderBottom:"1px solid var(--g100)",fontSize:13.5,cursor:"pointer",transition:"background .1s"}} onMouseEnter={e=>e.currentTarget.style.background="var(--g50)"} onMouseLeave={e=>e.currentTarget.style.background="transparent"}>
                   <div style={{fontFamily:"var(--mono)",fontSize:12,color:"var(--g400)"}}>{fmt.d(d.transaction_date)}</div>
-                  <div><span style={{fontWeight:700,fontFamily:"var(--mono)",fontSize:13}}>{d.ticker}</span><span style={{color:"var(--g400)",marginLeft:8}}>{d.company}</span></div>
+                  <div><span style={{fontWeight:700,fontFamily:"var(--mono)",fontSize:13}}>{d.ticker}</span>{d.exchange&&d.exchange!=="JSE"&&<span style={{marginLeft:4,fontSize:9,fontFamily:"var(--mono)",padding:"1px 5px",borderRadius:3,background:"var(--g100)",color:"var(--g500)"}}>{d.exchange}</span>}<span style={{color:"var(--g400)",marginLeft:8}}>{d.company}</span></div>
                   <div><span style={{color:"var(--g600)"}}>{d.director}</span><span style={{color:"var(--g300)",marginLeft:6,fontSize:10.5,fontFamily:"var(--mono)"}}>{d.role}</span></div>
                   <div><Tag type={d.transaction_type}/></div>
                   <div style={{textAlign:"right",fontFamily:"var(--mono)",fontSize:12,color:"var(--g500)"}}>{fmt.num(d.shares)}</div>
-                  <div style={{textAlign:"right",fontFamily:"var(--mono)",fontSize:12,color:"var(--g500)"}}>{d.price!=null?(d.market==="B3"?"R$":"R")+Number(d.price).toFixed(2):"—"}</div>
+                  <div style={{textAlign:"right",fontFamily:"var(--mono)",fontSize:12,color:"var(--g500)"}}>{d.price!=null?curSymbol(d.currency||"ZAR")+Number(d.price).toFixed(2):"—"}</div>
                   <div style={{textAlign:"right",fontFamily:"var(--mono)",fontSize:12,fontWeight:700,color:d.transaction_type==="Buy"?"var(--gn)":"var(--rd)"}}>{dealCur(d.value,d)}</div>
                 </div>
               ))}
@@ -474,7 +475,7 @@ function Company({ticker,go}){
         {deals.map((d,i)=>(
           <div key={d.id||i} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"14px 0",borderBottom:"1px solid var(--g100)"}}>
             <div style={{display:"flex",alignItems:"center",gap:14}}><Tag type={d.transaction_type}/><span style={{fontWeight:600}}>{d.director}</span><span style={{color:"var(--g400)",fontSize:11,fontFamily:"var(--mono)"}}>{d.role}</span></div>
-            <div style={{display:"flex",alignItems:"center",gap:20}}><span style={{fontFamily:"var(--mono)",fontSize:12,color:"var(--g400)"}}>{fmt.full(d.transaction_date)}</span><span style={{fontFamily:"var(--mono)",fontSize:12,color:"var(--g500)"}}>{fmt.num(d.shares)}{d.price!=null?" @ "+(mkt==="B3"?"R$":"R")+Number(d.price).toFixed(2):""}</span><span style={{fontFamily:"var(--mono)",fontSize:14,fontWeight:700,color:d.transaction_type==="Buy"?"var(--gn)":"var(--rd)",minWidth:80,textAlign:"right"}}>{cc(d.value)}</span></div>
+            <div style={{display:"flex",alignItems:"center",gap:20}}><span style={{fontFamily:"var(--mono)",fontSize:12,color:"var(--g400)"}}>{fmt.full(d.transaction_date)}</span><span style={{fontFamily:"var(--mono)",fontSize:12,color:"var(--g500)"}}>{fmt.num(d.shares)}{d.price!=null?" @ "+curSymbol(d.currency||"ZAR")+Number(d.price).toFixed(2):""}</span><span style={{fontFamily:"var(--mono)",fontSize:14,fontWeight:700,color:d.transaction_type==="Buy"?"var(--gn)":"var(--rd)",minWidth:80,textAlign:"right"}}>{fmtCur(d.value,mkt,d.currency)}</span></div>
           </div>
         ))}
       </div>

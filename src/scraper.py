@@ -91,6 +91,8 @@ EXCLUDE_KEYWORDS = [
     "employee share",
     "share scheme trust",
     "share purchase trust",
+    "major subsidiary",
+    "staff share",
 ]
 
 
@@ -209,6 +211,13 @@ class SharenetScraper:
 
     def _extract_ticker_from_text(self, text: str) -> str:
         """Extract JSE share code from SENS body text."""
+        # Pan African style: "Share code on JSE: PAN"
+        match = re.search(
+            r'Share\s+code\s+on\s+JSE\s*[:\s]\s*([A-Z]{2,5})',
+            text, re.IGNORECASE
+        )
+        if match:
+            return match.group(1).upper()
         # Standard: "JSE share code: NPN" / "Share code: HCI"
         match = re.search(
             r'(?:JSE\s+(?:share\s+)?code|Share\s+code)\s*[:\s]\s*([A-Z]{2,5})',
