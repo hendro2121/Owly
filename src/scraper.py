@@ -83,10 +83,22 @@ DEALING_KEYWORDS = [
     "director's dealing",
 ]
 
+# Announcements matching these keywords should be excluded — they're corporate
+# actions (share trusts, employee schemes) not individual director dealings
+EXCLUDE_KEYWORDS = [
+    "share trust",
+    "share incentive",
+    "employee share",
+    "share scheme trust",
+    "share purchase trust",
+]
+
 
 def is_director_dealing(text: str) -> bool:
-    """Check if text relates to director dealings."""
+    """Check if text relates to director dealings (not share trust/scheme)."""
     lower = text.lower()
+    if any(kw in lower for kw in EXCLUDE_KEYWORDS):
+        return False
     return any(kw in lower for kw in DEALING_KEYWORDS)
 
 
@@ -197,8 +209,16 @@ class SharenetScraper:
 
     def _extract_ticker_from_text(self, text: str) -> str:
         """Extract JSE share code from SENS body text."""
+        # Standard: "JSE share code: NPN" / "Share code: HCI"
         match = re.search(
             r'(?:JSE\s+(?:share\s+)?code|Share\s+code)\s*[:\s]\s*([A-Z]{2,5})',
+            text, re.IGNORECASE
+        )
+        if match:
+            return match.group(1).upper()
+        # Sibanye style: "Share codes: SSW (JSE)" or "Tickers JSE: SSW"
+        match = re.search(
+            r'(?:Share\s+codes?|Tickers?\s+JSE)\s*[:\s]\s*([A-Z]{2,5})\s*\(?\s*(?:JSE)?\s*\)?',
             text, re.IGNORECASE
         )
         return match.group(1).upper() if match else ""

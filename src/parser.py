@@ -68,8 +68,9 @@ PATTERNS = {
         r"(?:Name\s+of\s+(?:the\s+)?(?:director|executive\s+director))(?!\s+and\s+relationship)\s*[:\-]?\s*(.+?)(?:\n|$)",
         # "Director : Mark Sorour" / "Director  Mark Sorour"
         r"(?:^|\n)\s*Director\s*[:\-]\s*(.+?)(?:\n|$)",
-        # "Name: John Smith" (Grindrod style — simple "Name:")
+        # "Name: John Smith" (Grindrod style) / "Name                C Keyter" (Sibanye — spaces as separator)
         r"(?:^|\n)\s*Name\s*[:\-]\s+(.+?)(?:\n|$)",
+        r"Name\s{2,}(\S.+?)(?:\n|$)",
         # "NAME OF DIRECTOR  John Smith" (Argent uppercase)
         r"NAME\s+OF\s+DIRECTOR\s+(.+?)(?:\n|$)",
         # "A) Name: PIETER" / "B) Name: ANTON" / "1. Name: PIETER"
@@ -79,20 +80,28 @@ PATTERNS = {
     ],
     "role": [
         r"(?:Office\s+[Hh]eld|Designation|Position|Capacity|Role)\s*[:\-]\s*(.+?)(?:\n|$)",
+        # Sibanye style: "Position                     Executive Director"
+        r"(?:^|\n)\s*(?:Position|Designation)\s{2,}(.+?)(?:\n|$)",
         r"(?:STATUS\s*:\s*EXECUTIVE\s*/\s*NON[- ]EXECUTIVE)\s*(.+?)(?:\n|$)",
         r"(?:Company\s+of\s+which\s+a\s+director)\s*(.+?)(?:\n|$)",
     ],
     "transaction_date": [
         # "Date of transaction : 12 March 2026" / "DATE OF TRANSACTION  12 March 2026"
         r"(?:Date\s+(?:of\s+)?(?:the\s+)?transaction(?:s)?(?:\s+effected)?)\s*[:\-]?\s*(.+?)(?:\n|$)",
-        # "Transaction date : 11 March 2026"
+        # "Transaction date : 11 March 2026" / "Transaction date             20 March 2026"
         r"(?:Transaction\s+date)\s*[:\-]?\s*(.+?)(?:\n|$)",
+        r"(?:^|\n)\s*Transaction\s+date\s{2,}(.+?)(?:\n|$)",
+        # "Date of transaction             11 March 2026" (space-separated)
+        r"(?:^|\n)\s*Date\s+of\s+transaction\s{2,}(.+?)(?:\n|$)",
         # "DATE OF TRANSACTION" (uppercase, Argent)
         r"DATE\s+OF\s+TRANSACTION\s+(.+?)(?:\n|$)",
     ],
     "transaction_type": [
         # "Nature of transaction : On-market purchase" / "NATURE OF TRANSACTION  Purchase"
-        r"(?:Nature\s+of\s+transaction(?:s)?)\s*[:\-]?\s*(.+?)(?:\n|$)",
+        # Allow multi-line capture for continuation lines (HCI style wraps across lines)
+        r"(?:Nature\s+of\s+transaction(?:s)?)\s*[:\-]?\s*(.+(?:\n\s{20,}.+)*)",
+        # "Nature of transaction             On market purchase" (space-separated, multi-line)
+        r"(?:^|\n)\s*Nature\s+of\s+transaction\s{2,}(.+(?:\n\s{20,}.+)*)",
         r"(?:Type\s+of\s+transaction)\s*[:\-]?\s*(.+?)(?:\n|$)",
         r"NATURE\s+OF\s+TRANSACTION\s+(.+?)(?:\n|$)",
     ],
@@ -105,14 +114,16 @@ PATTERNS = {
     ],
     "price": [
         # "Volume weighted average price per security : R17.2004" / "Weighted average price per security: ZAR 7.9037"
-        r"(?:(?:Volume\s+)?[Ww]eighted\s+average\s+(?:purchase\s+)?price(?:\s+per\s+(?:share|security))?)\s*[:\-]?\s*(?:R|ZAR)?\s*([\d\s,\.]+)",
-        # "Average price per share : R4,003.47" / "Price per share: R33.11" / "PRICE PER SECURITY R33.11"
-        r"(?:(?:Average\s+)?[Pp]rice\s+per\s+(?:share|security))\s*[:\-]?\s*(?:R|ZAR)?\s*([\d\s,\.]+)",
-        r"PRICE\s+PER\s+SECURITY\s+(?:R|ZAR)?\s*([\d\s,\.]+)",
+        r"(?:(?:Volume\s+)?[Ww]eighted\s+average\s+(?:purchase\s+)?price(?:\s+per\s+(?:share|security))?)\s*[:\-]?\s*(?:R|ZAR)?\s*([\d\s,\.]+\s*(?:cps)?)",
+        # "Purchase price per share                         16 620 cps"
+        r"(?:(?:Purchase\s+)?[Pp]rice\s+per\s+(?:share|security))\s*[:\-]?\s*(?:R|ZAR)?\s*([\d\s,\.]+\s*(?:cps)?)",
+        r"PRICE\s+PER\s+SECURITY\s+(?:R|ZAR)?\s*([\d\s,\.]+\s*(?:cps)?)",
         # "Price per security : ZAR 134.00"
-        r"(?:Price\s+per\s+security)\s*[:\-]?\s*(?:R|ZAR)?\s*([\d\s,\.]+)",
+        r"(?:Price\s+per\s+security)\s*[:\-]?\s*(?:R|ZAR)?\s*([\d\s,\.]+\s*(?:cps)?)",
         # "Deemed market price per share" (Gold Fields — value may be on next line)
-        r"(?:Deemed\s+market\s+price\s+per\s+share)\s*[:\-]?\s*(?:R|ZAR)?\s*([\d\s,\.]+)",
+        r"(?:Deemed\s+market\s+price\s+per\s+share)\s*[:\-]?\s*(?:R|ZAR)?\s*([\d\s,\.]+\s*(?:cps)?)",
+        # "Market price                 R48.99" (Sibanye style)
+        r"(?:Market\s+price)\s*[:\-]?\s*(?:R|ZAR)?\s*([\d\s,\.]+\s*(?:cps)?)",
     ],
     "value": [
         # "Total value : ZAR 7 847 631.15" / "Total value: R286 679.07"
@@ -133,6 +144,8 @@ PATTERNS = {
     "nature_of_interest": [
         # "Nature and extent of director's interest : Indirect beneficial"
         r"(?:Nature\s+and\s+extent\s+of\s+(?:director'?s?\s+)?interest(?:\s+in\s+the\s+transaction)?)\s*[:\-]?\s*(.+?)(?:\n|$)",
+        # "Nature of interest           Direct and Beneficial" (space-separated)
+        r"(?:^|\n)\s*Nature\s+of\s+interest\s{2,}(.+?)(?:\n|$)",
         # "Extent of interest : Direct beneficial"
         r"(?:Extent\s+of\s+interest)\s*[:\-]?\s*(.+?)(?:\n|$)",
         # "Interest : Direct beneficial" / "NATURE AND EXTENT OF INTEREST"
@@ -158,22 +171,25 @@ def clean_number(text: str) -> Optional[float]:
     """
     Parse a number from text like '48,031,250.00', '48 031 250', '7 847 631.15'.
     Handles both comma and space as thousands separators.
+    Also handles 'cps' (cents per share) — divides by 100 to get Rands.
     """
     if not text:
         return None
-    # Remove currency prefix
+    # Check for cps (cents per share) before stripping
+    is_cps = "cps" in text.lower()
+    # Remove currency prefix and cps suffix
     text = re.sub(r'^[R\s]+|^ZAR\s*', '', text.strip())
+    text = re.sub(r'\s*cps.*$', '', text, flags=re.IGNORECASE).strip()
     # If there's a decimal point, preserve it; remove all other non-digit chars
-    # But first handle space-as-thousands (e.g., "7 847 631.15")
-    # Detect if spaces are thousands separators: "7 847 631" vs unrelated whitespace
     if '.' in text:
-        # Has decimal: "7 847 631.15" -> "7847631.15"
         cleaned = re.sub(r'[\s,]', '', text)
     else:
-        # No decimal: "992 906" or "39,732" -> remove space/comma
         cleaned = re.sub(r'[\s,]', '', text)
     try:
-        return float(cleaned)
+        val = float(cleaned)
+        if is_cps:
+            val = val / 100.0  # Convert cents to Rands
+        return val
     except (ValueError, TypeError):
         return None
 
@@ -239,6 +255,16 @@ def classify_transaction(text: str, llm_fallback: bool = False, api_key: str = N
     # ── Tier 1: Keyword matching ─────────────────────────────────────────
 
     # Check non-discretionary types first (more specific)
+    # Options keywords checked BEFORE tax sale because "exercise and net settlement"
+    # should match OptionsExercise, not TaxSale
+    options_keywords = [
+        "exercise of option", "option exercise", "exercised option",
+        "share option", "share appreciation right exercised",
+        "sar exercise", "exercise of share appreciation",
+        "exercised share appreciation", "stock option",
+        "exercise and net settlement", "exercise of share option",
+        "share options previously granted",
+    ]
     tax_sale_keywords = [
         "to fund tax", "to settle tax", "tax obligation", "tax liability",
         "net settlement", "non-discretionary", "tax withheld",
@@ -251,27 +277,21 @@ def classify_transaction(text: str, llm_fallback: bool = False, api_key: str = N
         "share appreciation right", "share matching scheme",
         "acceptance of conditional",
     ]
-    options_keywords = [
-        "exercise of option", "option exercise", "exercised option",
-        "share option", "share appreciation right exercised",
-        "sar exercise", "exercise of share appreciation",
-        "exercised share appreciation", "stock option",
-    ]
     conversion_keywords = [
         "conversion of", "converted", "rights issue", "rights offer",
         "capitalisation issue", "scrip dividend", "share split",
         "share consolidation", "bonus issue",
     ]
 
+    for kw in options_keywords:
+        if kw in lower:
+            return "OptionsExercise"
     for kw in tax_sale_keywords:
         if kw in lower:
             return "TaxSale"
     for kw in vesting_keywords:
         if kw in lower:
             return "Vesting"
-    for kw in options_keywords:
-        if kw in lower:
-            return "OptionsExercise"
     for kw in conversion_keywords:
         if kw in lower:
             return "Conversion"
@@ -411,12 +431,13 @@ class RegexParser:
         if len(lettered) > 1:
             return lettered[1:]  # First is header
 
-        # Strategy 2: Split on repeated "Name of director:" or "Name:" blocks
+        # Strategy 2: Split on repeated "Name of director:" or "Name:" or "Name    Person" blocks
         # Look for lines where a new director block starts
         name_pattern = (
             r'(?=\n\s*(?:'
             r'Name\s+of\s+(?:the\s+)?(?:director|associate|executive)'
             r'|Name\s*:'
+            r'|Name\s{2,}\S'
             r'|NAME\s+OF\s+DIRECTOR'
             r')\s*)'
         )
@@ -458,13 +479,16 @@ class RegexParser:
         parts = [p.strip() for p in parts if p.strip()]
 
         if len(parts) > 1:
-            # Merge the header (before first date) with the first date block
+            # Merge the header (before first date) with ALL date blocks
             # so each block has both its type and its date/shares/value
             # The first part has fields like "Name:", "Nature of transaction:"
-            # The second part starts with "Date of transaction:"
-            # We want: [header + first_date_block, second_date_block, ...]
-            merged = [parts[0] + "\n" + parts[1]]
-            merged.extend(parts[2:])
+            # Subsequent parts start with "Date of transaction:"
+            header = parts[0]
+            merged = [header + "\n" + parts[1]]
+            # Prepend header to all subsequent date blocks too so they
+            # inherit Nature of transaction, Class of securities, etc.
+            for part in parts[2:]:
+                merged.append(header + "\n" + part)
             return merged
         return [text]
 
