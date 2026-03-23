@@ -75,9 +75,8 @@ class RawAnnouncement:
 # ─── Keyword Filters ─────────────────────────────────────────────────────────
 
 DEALING_KEYWORDS = [
-    "dealings in securities",
-    "dealing in securities",
-    "dealing in shares",
+    "dealing in",
+    "dealings in",
     "director dealing",
     "directors' dealings",
     "director's dealing",
