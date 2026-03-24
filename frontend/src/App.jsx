@@ -2,6 +2,8 @@ import { useState, useMemo, useEffect } from "react";
 import api from "./api";
 
 const curSymbol=(c)=>({GBP:"£",USD:"$",EUR:"€",ZAR:"R"}[c]||"R");
+const isAcquisition=(t)=>["Buy","Vesting","OptionsExercise"].includes(t);
+const dealColor=(t)=>isAcquisition(t)?"var(--gn)":"var(--rd)";
 const fmtCur=(v,market,currency)=>{const p=currency?curSymbol(currency):"R";if(!v)return p+"0";if(v>=1e9)return p+(v/1e9).toFixed(1)+"bn";if(v>=1e6)return p+(v/1e6).toFixed(1)+"m";if(v>=1e3)return p+(v/1e3).toFixed(0)+"k";return p+Math.round(v)};
 const fmt={zar:v=>fmtCur(v,"JSE"),num:n=>(n||0).toLocaleString("en-ZA"),d:d=>d?new Date(d).toLocaleDateString("en-ZA",{day:"numeric",month:"short",year:"numeric"}):"",full:d=>d?new Date(d).toLocaleDateString("en-ZA",{day:"numeric",month:"long",year:"numeric"}):""};
 
@@ -149,7 +151,7 @@ function Landing({go}){
                 <span style={{color:"var(--g500)",fontSize:14}}>{d.director}</span>
                 <span style={{color:"var(--g300)",fontSize:11,fontFamily:"var(--mono)"}}>{d.role}</span>
               </div>
-              <span style={{fontFamily:"var(--mono)",fontSize:14,fontWeight:700,color:d.transaction_type==="Buy"?"var(--gn)":"var(--rd)"}}>{fmtCur(d.value,d.market||"JSE",d.currency)}</span>
+              <span style={{fontFamily:"var(--mono)",fontSize:14,fontWeight:700,color:dealColor(d.transaction_type)}}>{fmtCur(d.value,d.market||"JSE",d.currency)}</span>
             </div>
           ))}
         </div>
@@ -332,7 +334,7 @@ function Dash({go,setTicker,user,isPro}){
               <div>Date</div><div>Company</div><div>Director</div><div>Type</div><div style={{textAlign:"right"}}>Shares</div><div style={{textAlign:"right"}}>Price</div><div style={{textAlign:"right"}}>Value</div>
             </div>
             <div style={{maxHeight:520,overflowY:"auto"}}>
-              {(isPro?fd:fd.slice(0,10)).map((d,i)=>(
+              {fd.map((d,i)=>(
                 <div key={d.id||i} onClick={()=>{setTicker(d.ticker);go("company")}} style={{display:"grid",gridTemplateColumns:"72px 1.4fr 1.2fr 68px 90px 90px 90px",padding:"13px 0",borderBottom:"1px solid var(--g100)",fontSize:13.5,cursor:"pointer",transition:"background .1s"}} onMouseEnter={e=>e.currentTarget.style.background="var(--g50)"} onMouseLeave={e=>e.currentTarget.style.background="transparent"}>
                   <div style={{fontFamily:"var(--mono)",fontSize:12,color:"var(--g400)"}}>{fmt.d(d.transaction_date)}</div>
                   <div><span style={{fontWeight:700,fontFamily:"var(--mono)",fontSize:13}}>{d.ticker}</span>{d.exchange&&d.exchange!=="JSE"&&<span style={{marginLeft:4,fontSize:9,fontFamily:"var(--mono)",padding:"2px 6px",borderRadius:4,background:d.exchange==="LSE"?"#EFF6FF":d.exchange==="AMS"?"#FDF4FF":"var(--g100)",color:d.exchange==="LSE"?"#3B82F6":d.exchange==="AMS"?"#A855F7":"var(--g500)",fontWeight:600}}>{d.exchange}</span>}<span style={{color:"var(--g400)",marginLeft:8}}>{d.company}</span></div>
@@ -340,10 +342,9 @@ function Dash({go,setTicker,user,isPro}){
                   <div><Tag type={d.transaction_type}/></div>
                   <div style={{textAlign:"right",fontFamily:"var(--mono)",fontSize:12,color:"var(--g500)"}}>{fmt.num(d.shares)}</div>
                   <div style={{textAlign:"right",fontFamily:"var(--mono)",fontSize:12,color:"var(--g500)"}}>{d.price!=null?curSymbol(d.currency||"ZAR")+Number(d.price).toFixed(2):"—"}</div>
-                  <div style={{textAlign:"right",fontFamily:"var(--mono)",fontSize:12,fontWeight:700,color:d.transaction_type==="Buy"?"var(--gn)":"var(--rd)"}}>{dealCur(d.value,d)}</div>
+                  <div style={{textAlign:"right",fontFamily:"var(--mono)",fontSize:12,fontWeight:700,color:dealColor(d.transaction_type)}}>{dealCur(d.value,d)}</div>
                 </div>
               ))}
-              {!isPro&&fd.length>10&&<div style={{padding:"16px 0",textAlign:"center"}}><button onClick={()=>go("pricing")} style={{background:"none",border:"none",color:"var(--or)",fontSize:13,fontWeight:600,cursor:"pointer",fontFamily:"var(--f)"}}>Upgrade to see all {fd.length} deals →</button></div>}
             </div>
           </div>
           )}
@@ -351,7 +352,6 @@ function Dash({go,setTicker,user,isPro}){
       )}
 
       {tab==="clusters"&&(
-        isPro ? (
         <div className="rise">
           <p style={{fontSize:15,color:"var(--g500)",marginBottom:20,lineHeight:1.7,maxWidth:600}}>When multiple directors buy their own company's stock around the same time, it often signals they believe the price will rise. These are <strong style={{color:"var(--g900)"}}>cluster buys</strong>.</p>
           {clusters.length===0 ? (
@@ -372,18 +372,9 @@ function Dash({go,setTicker,user,isPro}){
             </div>
           ))}
         </div>
-        ) : (
-        <ProGate go={go} label="Cluster signals require Pro">
-          <div style={{padding:"60px 0",textAlign:"center"}}>
-            <div style={{fontSize:48,fontWeight:800,color:"var(--or)",fontFamily:"var(--mono)"}}>{clusters.length}</div>
-            <div style={{fontSize:13,color:"var(--g400)",fontFamily:"var(--mono)",marginTop:8}}>cluster signals detected</div>
-          </div>
-        </ProGate>
-        )
       )}
 
       {tab==="sectors"&&(
-        isPro ? (
         <div className="rise">
           <p style={{fontSize:15,color:"var(--g500)",marginBottom:16,lineHeight:1.7,maxWidth:600}}>Which JSE sectors are directors putting their own money into? Green shows buying, red shows selling.</p>
           <div style={{display:"flex",gap:4,marginBottom:20,alignItems:"center"}}>
@@ -410,14 +401,6 @@ function Dash({go,setTicker,user,isPro}){
           </div>
           )}
         </div>
-        ) : (
-        <ProGate go={go} label="Sector flow requires Pro">
-          <div style={{padding:"60px 0",textAlign:"center"}}>
-            <div style={{fontSize:48,fontWeight:800,color:"var(--or)",fontFamily:"var(--mono)"}}>{sectors.length}</div>
-            <div style={{fontSize:13,color:"var(--g400)",fontFamily:"var(--mono)",marginTop:8}}>sectors tracked</div>
-          </div>
-        </ProGate>
-        )
       )}
 
       {tab==="companies"&&(
@@ -482,7 +465,6 @@ function Company({ticker,go,user,isPro}){
   const cc=v=>fmtCur(v,mkt);
   const buys=deals.filter(d=>d.transaction_type==="Buy"),sells=deals.filter(d=>d.transaction_type==="Sell");
   const bv=buys.reduce((s,d)=>s+(d.value||0),0),sv=sells.reduce((s,d)=>s+(d.value||0),0);
-  const visibleDeals=isPro?deals:deals.slice(0,3);
   return(
     <div style={{maxWidth:960,margin:"0 auto",padding:"0 40px 64px"}}>
       <button onClick={()=>go("dashboard")} style={{display:"flex",alignItems:"center",gap:6,background:"none",border:"none",cursor:"pointer",color:"var(--or)",fontSize:14,fontWeight:600,fontFamily:"var(--f)",padding:"20px 0"}}>{"←"} Back</button>
@@ -500,18 +482,13 @@ function Company({ticker,go,user,isPro}){
       </div>
       <h3 style={{fontSize:12,fontFamily:"var(--mono)",textTransform:"uppercase",letterSpacing:".1em",color:"var(--g400)",marginBottom:12}}>All Director Deals</h3>
       <div style={{borderTop:"2px solid var(--g900)"}}>
-        {visibleDeals.map((d,i)=>(
+        {deals.map((d,i)=>(
           <div key={d.id||i} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"14px 0",borderBottom:"1px solid var(--g100)"}}>
             <div style={{display:"flex",alignItems:"center",gap:14}}><Tag type={d.transaction_type}/><span style={{fontWeight:600}}>{d.director}</span><span style={{color:"var(--g400)",fontSize:11,fontFamily:"var(--mono)"}}>{d.role}</span></div>
-            <div style={{display:"flex",alignItems:"center",gap:20}}><span style={{fontFamily:"var(--mono)",fontSize:12,color:"var(--g400)"}}>{fmt.full(d.transaction_date)}</span><span style={{fontFamily:"var(--mono)",fontSize:12,color:"var(--g500)"}}>{fmt.num(d.shares)}{d.price!=null?" @ "+curSymbol(d.currency||"ZAR")+Number(d.price).toFixed(2):""}</span><span style={{fontFamily:"var(--mono)",fontSize:14,fontWeight:700,color:d.transaction_type==="Buy"?"var(--gn)":"var(--rd)",minWidth:80,textAlign:"right"}}>{fmtCur(d.value,mkt,d.currency)}</span></div>
+            <div style={{display:"flex",alignItems:"center",gap:20}}><span style={{fontFamily:"var(--mono)",fontSize:12,color:"var(--g400)"}}>{fmt.full(d.transaction_date)}</span><span style={{fontFamily:"var(--mono)",fontSize:12,color:"var(--g500)"}}>{fmt.num(d.shares)}{d.price!=null?" @ "+curSymbol(d.currency||"ZAR")+Number(d.price).toFixed(2):""}</span><span style={{fontFamily:"var(--mono)",fontSize:14,fontWeight:700,color:dealColor(d.transaction_type),minWidth:80,textAlign:"right"}}>{fmtCur(d.value,mkt,d.currency)}</span></div>
           </div>
         ))}
       </div>
-      {!isPro&&deals.length>3&&(
-        <div style={{padding:"24px 0",textAlign:"center"}}>
-          <button onClick={()=>go("pricing")} style={{padding:"12px 28px",borderRadius:10,background:"var(--or)",color:"#fff",fontSize:14,fontWeight:700,border:"none",cursor:"pointer",fontFamily:"var(--f)"}}>Upgrade to see all {deals.length} deals</button>
-        </div>
-      )}
     </div>
   );
 }
