@@ -225,7 +225,7 @@ function Dash({go,setTicker,user,isPro}){
   const loadAll=()=>{
     setLoading(true);
     Promise.all([
-      api.deals({perPage:200,market:market||undefined}).catch(()=>({deals:[]})),
+      api.deals({perPage:200,market:market||undefined,excludeNonDiscretionary:false}).catch(()=>({deals:[]})),
       api.clusters(365,2,market||undefined).catch(()=>[]),
       api.sectors(periodToDays(sectorPeriod),market||undefined).catch(()=>[]),
       api.stats(365,market||undefined).catch(()=>null),
@@ -316,7 +316,7 @@ function Dash({go,setTicker,user,isPro}){
               <svg style={{position:"absolute",left:11,top:"50%",transform:"translateY(-50%)"}} width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--g400)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
               <input value={q} onChange={e=>setQ(e.target.value)} placeholder="Search..." style={{background:"var(--white)",border:"1.5px solid var(--g200)",borderRadius:8,padding:"8px 12px 8px 34px",fontSize:13,fontFamily:"var(--f)",color:"var(--g900)",outline:"none",width:200}}/>
             </div>
-            {pill("All",tf==="All",()=>setTf("All"))}{pill("Buy",tf==="Buy",()=>setTf("Buy"),"var(--gn)")}{pill("Sell",tf==="Sell",()=>setTf("Sell"),"var(--rd)")}
+            {pill("All",tf==="All",()=>setTf("All"))}{pill("Buy",tf==="Buy",()=>setTf("Buy"),"var(--gn)")}{pill("Sell",tf==="Sell",()=>setTf("Sell"),"var(--rd)")}{pill("Vesting",tf==="Vesting",()=>setTf("Vesting"))}{pill("Tax Sale",tf==="TaxSale",()=>setTf("TaxSale"))}{pill("Options",tf==="OptionsExercise",()=>setTf("OptionsExercise"))}{pill("Hedge",tf==="HedgeSettlement",()=>setTf("HedgeSettlement"))}
             <div style={{width:1,height:20,background:"var(--g200)"}}/>
             {[{l:"All",v:0},{l:"R1m+",v:1e6},{l:"R5m+",v:5e6}].map(m=>pill(m.l,mv===m.v,()=>setMv(m.v)))}
             <div style={{width:1,height:20,background:"var(--g200)"}}/>

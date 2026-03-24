@@ -69,13 +69,14 @@ export const api = {
   deals: ({
     page = 1, perPage = 50, ticker, director,
     transactionType, sector, minValue, maxValue,
-    days, sort, order, search, market,
+    days, sort, order, search, market, excludeNonDiscretionary,
   } = {}) =>
     request('/deals', {
       page, per_page: perPage, ticker, director,
       transaction_type: transactionType, sector,
       min_value: minValue, max_value: maxValue,
       days, sort, order, search, market,
+      exclude_non_discretionary: excludeNonDiscretionary,
     }),
 
   /** Most recent deals */
