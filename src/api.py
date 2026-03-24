@@ -782,7 +782,7 @@ async def debug_test_parse(secret: str = Query(...), ticker: str = Query(...)):
                     "title": row["title"],
                     "url": row["url"],
                     "text_length": len(full_text),
-                    "text_preview": full_text[:500],
+                    "text_preview": full_text[:2000],
                     "total_parsed": len(deals),
                     "valid_deals": len(valid),
                     "deals": [asdict(d) for d in valid],
