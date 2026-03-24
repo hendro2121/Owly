@@ -15,3 +15,8 @@ pydantic>=2.0.0
 
 # LLM parsing (optional - only needed for fallback parser)
 anthropic>=0.40.0
+
+# Auth & payments
+stripe>=8.0.0
+PyJWT>=2.8.0
+bcrypt>=4.1.0

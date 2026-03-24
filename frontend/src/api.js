@@ -8,6 +8,20 @@
 
 const BASE = '/api';
 
+function getToken() {
+  return localStorage.getItem('raven_token');
+}
+
+function setToken(token) {
+  if (token) localStorage.setItem('raven_token', token);
+  else localStorage.removeItem('raven_token');
+}
+
+function authHeaders() {
+  const t = getToken();
+  return t ? { 'Authorization': `Bearer ${t}` } : {};
+}
+
 async function request(path, params = {}) {
   const url = new URL(`${BASE}${path}`, window.location.origin);
   Object.entries(params).forEach(([k, v]) => {
@@ -22,6 +36,24 @@ async function request(path, params = {}) {
     throw new Error(err.detail || `API error: ${resp.status}`);
   }
   return resp.json();
+}
+
+async function authPost(path, body = {}) {
+  const resp = await fetch(`${BASE}${path}`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...authHeaders() },
+    body: JSON.stringify(body),
+  });
+  const data = await resp.json().catch(() => ({}));
+  if (!resp.ok) throw new Error(data.detail || `API error: ${resp.status}`);
+  return data;
+}
+
+async function authGet(path) {
+  const resp = await fetch(`${BASE}${path}`, { headers: authHeaders() });
+  const data = await resp.json().catch(() => ({}));
+  if (!resp.ok) throw new Error(data.detail || `API error: ${resp.status}`);
+  return data;
 }
 
 // ── Endpoints ──────────────────────────────────────────────────
@@ -70,6 +102,17 @@ export const api = {
   /** Seed mock data (development only) */
   seed: () =>
     fetch(`${BASE}/dev/seed`, { method: 'POST' }).then(r => r.json()),
+
+  // ── Auth ──────────────────────────────────────────────────────
+  signup: (email, password) => authPost('/auth/signup', { email, password }).then(d => { setToken(d.token); return d; }),
+  login: (email, password) => authPost('/auth/login', { email, password }).then(d => { setToken(d.token); return d; }),
+  me: () => authGet('/auth/me'),
+  logout: () => { setToken(null); },
+  getToken,
+
+  // ── Stripe ────────────────────────────────────────────────────
+  createCheckout: () => authPost('/stripe/create-checkout'),
+  createPortal: () => authPost('/stripe/portal'),
 };
 
 export default api;

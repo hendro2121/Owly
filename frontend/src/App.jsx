@@ -46,7 +46,7 @@ const Loader = () => (
 );
 
 // ─── Nav ────────────────────────────────────────────────────────────────────
-function Nav({page,go}){
+function Nav({page,go,user,onLogout}){
   return(
     <nav style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"18px 40px",maxWidth:1300,margin:"0 auto"}}>
       <button onClick={()=>go("landing")} style={{display:"flex",alignItems:"center",gap:8,background:"none",border:"none",cursor:"pointer"}}>
@@ -57,7 +57,15 @@ function Nav({page,go}){
         {["dashboard","pricing"].map(p=>(
           <button key={p} onClick={()=>go(p)} style={{padding:"8px 18px",borderRadius:8,border:"none",background:page===p?"var(--g100)":"transparent",color:page===p?"var(--g900)":"var(--g500)",fontFamily:"var(--f)",fontSize:14,fontWeight:600,cursor:"pointer",textTransform:"capitalize"}}>{p}</button>
         ))}
-        <button onClick={()=>go("dashboard")} style={{marginLeft:12,padding:"9px 22px",borderRadius:8,border:"none",background:"var(--or)",color:"#fff",fontSize:13,fontWeight:700,cursor:"pointer",fontFamily:"var(--f)"}}>Get Started</button>
+        {user ? (
+          <div style={{display:"flex",alignItems:"center",gap:8,marginLeft:12}}>
+            {user.subscription_status==="active"&&<span style={{padding:"3px 8px",borderRadius:5,background:"var(--or)",color:"#fff",fontSize:10,fontWeight:700,fontFamily:"var(--mono)",letterSpacing:".06em"}}>PRO</span>}
+            <span style={{fontSize:13,color:"var(--g500)",fontFamily:"var(--mono)"}}>{user.email}</span>
+            <button onClick={onLogout} style={{padding:"8px 16px",borderRadius:8,border:"1.5px solid var(--g200)",background:"transparent",color:"var(--g500)",fontSize:13,fontWeight:600,cursor:"pointer",fontFamily:"var(--f)"}}>Log out</button>
+          </div>
+        ) : (
+          <button onClick={()=>go("login")} style={{marginLeft:12,padding:"9px 22px",borderRadius:8,border:"none",background:"var(--or)",color:"#fff",fontSize:13,fontWeight:700,cursor:"pointer",fontFamily:"var(--f)"}}>Log In</button>
+        )}
       </div>
     </nav>
   );
@@ -187,7 +195,7 @@ function Landing({go}){
 }
 
 // ─── Dashboard ──────────────────────────────────────────────────────────────
-function Dash({go,setTicker}){
+function Dash({go,setTicker,user,isPro}){
   const [tab,setTab]=useState("feed");
   const [tf,setTf]=useState("All");
   const [q,setQ]=useState("");
@@ -324,7 +332,7 @@ function Dash({go,setTicker}){
               <div>Date</div><div>Company</div><div>Director</div><div>Type</div><div style={{textAlign:"right"}}>Shares</div><div style={{textAlign:"right"}}>Price</div><div style={{textAlign:"right"}}>Value</div>
             </div>
             <div style={{maxHeight:520,overflowY:"auto"}}>
-              {fd.map((d,i)=>(
+              {(isPro?fd:fd.slice(0,10)).map((d,i)=>(
                 <div key={d.id||i} onClick={()=>{setTicker(d.ticker);go("company")}} style={{display:"grid",gridTemplateColumns:"72px 1.4fr 1.2fr 68px 90px 90px 90px",padding:"13px 0",borderBottom:"1px solid var(--g100)",fontSize:13.5,cursor:"pointer",transition:"background .1s"}} onMouseEnter={e=>e.currentTarget.style.background="var(--g50)"} onMouseLeave={e=>e.currentTarget.style.background="transparent"}>
                   <div style={{fontFamily:"var(--mono)",fontSize:12,color:"var(--g400)"}}>{fmt.d(d.transaction_date)}</div>
                   <div><span style={{fontWeight:700,fontFamily:"var(--mono)",fontSize:13}}>{d.ticker}</span>{d.exchange&&d.exchange!=="JSE"&&<span style={{marginLeft:4,fontSize:9,fontFamily:"var(--mono)",padding:"2px 6px",borderRadius:4,background:d.exchange==="LSE"?"#EFF6FF":d.exchange==="AMS"?"#FDF4FF":"var(--g100)",color:d.exchange==="LSE"?"#3B82F6":d.exchange==="AMS"?"#A855F7":"var(--g500)",fontWeight:600}}>{d.exchange}</span>}<span style={{color:"var(--g400)",marginLeft:8}}>{d.company}</span></div>
@@ -335,6 +343,7 @@ function Dash({go,setTicker}){
                   <div style={{textAlign:"right",fontFamily:"var(--mono)",fontSize:12,fontWeight:700,color:d.transaction_type==="Buy"?"var(--gn)":"var(--rd)"}}>{dealCur(d.value,d)}</div>
                 </div>
               ))}
+              {!isPro&&fd.length>10&&<div style={{padding:"16px 0",textAlign:"center"}}><button onClick={()=>go("pricing")} style={{background:"none",border:"none",color:"var(--or)",fontSize:13,fontWeight:600,cursor:"pointer",fontFamily:"var(--f)"}}>Upgrade to see all {fd.length} deals →</button></div>}
             </div>
           </div>
           )}
@@ -342,6 +351,7 @@ function Dash({go,setTicker}){
       )}
 
       {tab==="clusters"&&(
+        isPro ? (
         <div className="rise">
           <p style={{fontSize:15,color:"var(--g500)",marginBottom:20,lineHeight:1.7,maxWidth:600}}>When multiple directors buy their own company's stock around the same time, it often signals they believe the price will rise. These are <strong style={{color:"var(--g900)"}}>cluster buys</strong>.</p>
           {clusters.length===0 ? (
@@ -362,9 +372,18 @@ function Dash({go,setTicker}){
             </div>
           ))}
         </div>
+        ) : (
+        <ProGate go={go} label="Cluster signals require Pro">
+          <div style={{padding:"60px 0",textAlign:"center"}}>
+            <div style={{fontSize:48,fontWeight:800,color:"var(--or)",fontFamily:"var(--mono)"}}>{clusters.length}</div>
+            <div style={{fontSize:13,color:"var(--g400)",fontFamily:"var(--mono)",marginTop:8}}>cluster signals detected</div>
+          </div>
+        </ProGate>
+        )
       )}
 
       {tab==="sectors"&&(
+        isPro ? (
         <div className="rise">
           <p style={{fontSize:15,color:"var(--g500)",marginBottom:16,lineHeight:1.7,maxWidth:600}}>Which JSE sectors are directors putting their own money into? Green shows buying, red shows selling.</p>
           <div style={{display:"flex",gap:4,marginBottom:20,alignItems:"center"}}>
@@ -391,6 +410,14 @@ function Dash({go,setTicker}){
           </div>
           )}
         </div>
+        ) : (
+        <ProGate go={go} label="Sector flow requires Pro">
+          <div style={{padding:"60px 0",textAlign:"center"}}>
+            <div style={{fontSize:48,fontWeight:800,color:"var(--or)",fontFamily:"var(--mono)"}}>{sectors.length}</div>
+            <div style={{fontSize:13,color:"var(--g400)",fontFamily:"var(--mono)",marginTop:8}}>sectors tracked</div>
+          </div>
+        </ProGate>
+        )
       )}
 
       {tab==="companies"&&(
@@ -434,7 +461,7 @@ function Dash({go,setTicker}){
 }
 
 // ─── Company ────────────────────────────────────────────────────────────────
-function Company({ticker,go}){
+function Company({ticker,go,user,isPro}){
   const [deals,setDeals]=useState([]);
   const [loading,setLoading]=useState(true);
 
@@ -455,6 +482,7 @@ function Company({ticker,go}){
   const cc=v=>fmtCur(v,mkt);
   const buys=deals.filter(d=>d.transaction_type==="Buy"),sells=deals.filter(d=>d.transaction_type==="Sell");
   const bv=buys.reduce((s,d)=>s+(d.value||0),0),sv=sells.reduce((s,d)=>s+(d.value||0),0);
+  const visibleDeals=isPro?deals:deals.slice(0,3);
   return(
     <div style={{maxWidth:960,margin:"0 auto",padding:"0 40px 64px"}}>
       <button onClick={()=>go("dashboard")} style={{display:"flex",alignItems:"center",gap:6,background:"none",border:"none",cursor:"pointer",color:"var(--or)",fontSize:14,fontWeight:600,fontFamily:"var(--f)",padding:"20px 0"}}>{"←"} Back</button>
@@ -472,23 +500,98 @@ function Company({ticker,go}){
       </div>
       <h3 style={{fontSize:12,fontFamily:"var(--mono)",textTransform:"uppercase",letterSpacing:".1em",color:"var(--g400)",marginBottom:12}}>All Director Deals</h3>
       <div style={{borderTop:"2px solid var(--g900)"}}>
-        {deals.map((d,i)=>(
+        {visibleDeals.map((d,i)=>(
           <div key={d.id||i} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"14px 0",borderBottom:"1px solid var(--g100)"}}>
             <div style={{display:"flex",alignItems:"center",gap:14}}><Tag type={d.transaction_type}/><span style={{fontWeight:600}}>{d.director}</span><span style={{color:"var(--g400)",fontSize:11,fontFamily:"var(--mono)"}}>{d.role}</span></div>
             <div style={{display:"flex",alignItems:"center",gap:20}}><span style={{fontFamily:"var(--mono)",fontSize:12,color:"var(--g400)"}}>{fmt.full(d.transaction_date)}</span><span style={{fontFamily:"var(--mono)",fontSize:12,color:"var(--g500)"}}>{fmt.num(d.shares)}{d.price!=null?" @ "+curSymbol(d.currency||"ZAR")+Number(d.price).toFixed(2):""}</span><span style={{fontFamily:"var(--mono)",fontSize:14,fontWeight:700,color:d.transaction_type==="Buy"?"var(--gn)":"var(--rd)",minWidth:80,textAlign:"right"}}>{fmtCur(d.value,mkt,d.currency)}</span></div>
           </div>
         ))}
       </div>
+      {!isPro&&deals.length>3&&(
+        <div style={{padding:"24px 0",textAlign:"center"}}>
+          <button onClick={()=>go("pricing")} style={{padding:"12px 28px",borderRadius:10,background:"var(--or)",color:"#fff",fontSize:14,fontWeight:700,border:"none",cursor:"pointer",fontFamily:"var(--f)"}}>Upgrade to see all {deals.length} deals</button>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─── Auth Page ──────────────────────────────────────────────────────────────
+function AuthPage({go,setUser}){
+  const [mode,setMode]=useState("login"); // "login" or "signup"
+  const [email,setEmail]=useState("");
+  const [password,setPassword]=useState("");
+  const [error,setError]=useState("");
+  const [loading,setLoading]=useState(false);
+
+  const submit=async(e)=>{
+    e.preventDefault();
+    setError("");setLoading(true);
+    try{
+      const fn=mode==="login"?api.login:api.signup;
+      const res=await fn(email,password);
+      setUser({email:res.email,subscription_status:res.subscription_status});
+      go("dashboard");
+    }catch(err){
+      setError(err.message||"Something went wrong");
+    }finally{setLoading(false)}
+  };
+
+  return(
+    <div style={{maxWidth:400,margin:"80px auto",padding:"0 40px"}}>
+      <h1 className="rise" style={{fontSize:36,fontWeight:800,letterSpacing:"-.04em",textTransform:"uppercase",marginBottom:8}}>{mode==="login"?"LOG IN":"SIGN UP"}</h1>
+      <p style={{color:"var(--g500)",fontSize:15,marginBottom:32}}>{mode==="login"?"Welcome back.":"Create your free Raven account."}</p>
+      <form onSubmit={submit} style={{display:"flex",flexDirection:"column",gap:14}}>
+        <input type="email" value={email} onChange={e=>setEmail(e.target.value)} placeholder="Email" required
+          style={{padding:"12px 16px",borderRadius:8,border:"1.5px solid var(--g200)",fontSize:14,fontFamily:"var(--f)",outline:"none",color:"var(--g900)"}}/>
+        <input type="password" value={password} onChange={e=>setPassword(e.target.value)} placeholder="Password" required minLength={6}
+          style={{padding:"12px 16px",borderRadius:8,border:"1.5px solid var(--g200)",fontSize:14,fontFamily:"var(--f)",outline:"none",color:"var(--g900)"}}/>
+        {error&&<div style={{color:"var(--rd)",fontSize:13,fontFamily:"var(--mono)"}}>{error}</div>}
+        <button type="submit" disabled={loading} style={{padding:"13px 0",borderRadius:10,border:"none",background:"var(--or)",color:"#fff",fontSize:15,fontWeight:700,cursor:"pointer",fontFamily:"var(--f)",opacity:loading?.6:1}}>
+          {loading?"...":(mode==="login"?"Log In":"Create Account")}
+        </button>
+      </form>
+      <div style={{marginTop:20,textAlign:"center"}}>
+        <button onClick={()=>{setMode(mode==="login"?"signup":"login");setError("")}} style={{background:"none",border:"none",color:"var(--or)",fontSize:14,fontWeight:600,cursor:"pointer",fontFamily:"var(--f)"}}>
+          {mode==="login"?"Don't have an account? Sign up":"Already have an account? Log in"}
+        </button>
+      </div>
+    </div>
+  );
+}
+
+// ─── Upgrade Gate Overlay ────────────────────────────────────────────────────
+function ProGate({go,children,label}){
+  return(
+    <div style={{position:"relative"}}>
+      <div style={{filter:"blur(6px)",pointerEvents:"none",userSelect:"none"}}>{children}</div>
+      <div style={{position:"absolute",inset:0,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",background:"rgba(255,255,255,0.7)",borderRadius:12}}>
+        <div style={{fontSize:13,fontFamily:"var(--mono)",color:"var(--g500)",textTransform:"uppercase",letterSpacing:".08em",marginBottom:12}}>{label||"Pro feature"}</div>
+        <button onClick={()=>go("pricing")} style={{padding:"12px 28px",borderRadius:10,background:"var(--or)",color:"#fff",fontSize:14,fontWeight:700,border:"none",cursor:"pointer",fontFamily:"var(--f)"}}>Upgrade to Pro</button>
+      </div>
     </div>
   );
 }
 
 // ─── Pricing ────────────────────────────────────────────────────────────────
-function Pricing({go}){
+function Pricing({go,user}){
+  const [loading,setLoading]=useState(false);
+  const isPro=user&&user.subscription_status==="active";
+
+  const handleUpgrade=async()=>{
+    if(!user){go("login");return}
+    if(isPro){
+      // Already pro — open portal to manage
+      try{setLoading(true);const r=await api.createPortal();window.location.href=r.portal_url}catch(e){alert(e.message)}finally{setLoading(false)}
+      return;
+    }
+    try{setLoading(true);const r=await api.createCheckout();window.location.href=r.checkout_url}catch(e){alert(e.message)}finally{setLoading(false)}
+  };
+
   const chk=()=><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--or)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>;
   const plans=[
-    {name:"FREE",price:"R0",per:"forever",desc:"See what's happening on the JSE.",feats:["Latest 10 director deals","Basic search","24-hour delay"],dark:false},
-    {name:"PRO",price:"R70",per:"/month",desc:"Full access for serious investors.",feats:["All deals in real-time","Cluster buy alerts","Sector flow analysis","Company profiles","Email watchlist alerts","CSV export"],dark:true,pop:true},
+    {name:"FREE",price:"R0",per:"forever",desc:"See what's happening on the JSE.",feats:["Latest 10 director deals","Basic search","24-hour delay"],dark:false,action:()=>go("dashboard"),btn:"Get Started"},
+    {name:"PRO",price:"R70",per:"/month",desc:"Full access for serious investors.",feats:["All deals in real-time","Cluster buy alerts","Sector flow analysis","Company profiles","Email watchlist alerts","CSV export"],dark:true,pop:true,action:handleUpgrade,btn:isPro?"Manage Subscription":user?"Upgrade Now":"Sign Up to Upgrade"},
   ];
   return(
     <div style={{maxWidth:1060,margin:"0 auto",padding:"56px 40px 72px"}}>
@@ -502,7 +605,7 @@ function Pricing({go}){
             <div style={{marginBottom:12}}><span style={{fontSize:44,fontWeight:800,letterSpacing:"-.04em"}}>{p.price}</span><span style={{fontSize:14,color:p.dark?"var(--g500)":"var(--g400)",marginLeft:4}}>{p.per}</span></div>
             <div style={{fontSize:14,color:p.dark?"var(--g500)":"var(--g500)",marginBottom:28,lineHeight:1.5}}>{p.desc}</div>
             <div style={{flex:1}}>{p.feats.map((ft,j)=>(<div key={j} style={{display:"flex",alignItems:"center",gap:10,marginBottom:10,fontSize:14,color:p.dark?"var(--g300)":"var(--g600)"}}>{chk()}{ft}</div>))}</div>
-            <button onClick={()=>go("dashboard")} style={{marginTop:28,padding:"13px 0",borderRadius:10,border:p.dark?"none":"1.5px solid var(--g200)",background:p.dark?"var(--or)":"var(--white)",color:p.dark?"#fff":"var(--g900)",fontSize:14,fontWeight:700,cursor:"pointer",fontFamily:"var(--f)",width:"100%"}}>{p.dark?"Start Free Trial":"Get Started"}</button>
+            <button onClick={p.action} disabled={loading} style={{marginTop:28,padding:"13px 0",borderRadius:10,border:p.dark?"none":"1.5px solid var(--g200)",background:p.dark?"var(--or)":"var(--white)",color:p.dark?"#fff":"var(--g900)",fontSize:14,fontWeight:700,cursor:"pointer",fontFamily:"var(--f)",width:"100%",opacity:loading?.6:1}}>{loading?"...":(p.btn)}</button>
           </div>
         ))}
       </div>
@@ -512,15 +615,38 @@ function Pricing({go}){
 
 // ─── App ────────────────────────────────────────────────────────────────────
 export default function App(){
-  const [page,setPage]=useState("landing");const [ticker,setTicker]=useState(null);
+  const [page,setPage]=useState("landing");
+  const [ticker,setTicker]=useState(null);
+  const [user,setUser]=useState(null);
+  const [authLoading,setAuthLoading]=useState(true);
+
+  // Check for existing session on mount
+  useEffect(()=>{
+    if(api.getToken()){
+      api.me().then(u=>setUser(u)).catch(()=>{api.logout();setUser(null)}).finally(()=>setAuthLoading(false));
+    }else{setAuthLoading(false)}
+    // Check for Stripe checkout redirect
+    const params=new URLSearchParams(window.location.search);
+    if(params.get("checkout")==="success"){
+      // Refresh user to get updated subscription status
+      if(api.getToken()){api.me().then(u=>setUser(u)).catch(()=>{})}
+      window.history.replaceState({},"","/");
+      setPage("dashboard");
+    }
+  },[]);
+
+  const isPro=user&&user.subscription_status==="active";
+  const handleLogout=()=>{api.logout();setUser(null);setPage("landing")};
+
   return(
     <div style={{minHeight:"100vh",background:"var(--white)"}}>
       <style>{css}</style>
-      <Nav page={page} go={setPage}/>
+      <Nav page={page} go={setPage} user={user} onLogout={handleLogout}/>
       {page==="landing"&&<Landing go={setPage}/>}
-      {page==="dashboard"&&<Dash go={setPage} setTicker={setTicker}/>}
-      {page==="company"&&ticker&&<Company ticker={ticker} go={setPage}/>}
-      {page==="pricing"&&<Pricing go={setPage}/>}
+      {page==="dashboard"&&<Dash go={setPage} setTicker={setTicker} user={user} isPro={isPro}/>}
+      {page==="company"&&ticker&&<Company ticker={ticker} go={setPage} user={user} isPro={isPro}/>}
+      {page==="pricing"&&<Pricing go={setPage} user={user}/>}
+      {page==="login"&&<AuthPage go={setPage} setUser={setUser}/>}
     </div>
   );
 }

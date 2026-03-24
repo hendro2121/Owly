@@ -13,8 +13,11 @@ from contextlib import contextmanager
 
 import psycopg2
 import psycopg2.extras
+import jwt
+import bcrypt
+import stripe
 
-from fastapi import FastAPI, Query, HTTPException, Path
+from fastapi import FastAPI, Query, HTTPException, Path, Header, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse, FileResponse
 from fastapi.staticfiles import StaticFiles
@@ -62,6 +65,52 @@ def query_val(conn, sql, params=None):
         cur.execute(sql, params or ())
         row = cur.fetchone()
         return row[0] if row else None
+
+# ─── Auth & Stripe Config ────────────────────────────────────────────────────
+
+JWT_SECRET = os.environ.get("JWT_SECRET", "change-me-in-prod")
+JWT_EXPIRY_DAYS = 30
+
+stripe.api_key = os.environ.get("STRIPE_SECRET_KEY", "")
+STRIPE_PUBLISHABLE_KEY = os.environ.get("STRIPE_PUBLISHABLE_KEY", "")
+STRIPE_WEBHOOK_SECRET = os.environ.get("STRIPE_WEBHOOK_SECRET", "")
+STRIPE_PRICE_ID = os.environ.get("STRIPE_PRICE_ID", "")
+APP_URL = os.environ.get("APP_URL", "https://raven-production-ca3b.up.railway.app")
+
+
+def create_token(user_id: int, email: str) -> str:
+    return jwt.encode(
+        {"user_id": user_id, "email": email, "exp": datetime.utcnow() + timedelta(days=JWT_EXPIRY_DAYS)},
+        JWT_SECRET, algorithm="HS256"
+    )
+
+
+def get_current_user(authorization: str) -> dict:
+    """Decode JWT and fetch user from DB. Returns user dict or raises 401."""
+    if not authorization or not authorization.startswith("Bearer "):
+        raise HTTPException(401, "Missing or invalid authorization header")
+    token = authorization[7:]
+    try:
+        payload = jwt.decode(token, JWT_SECRET, algorithms=["HS256"])
+    except jwt.ExpiredSignatureError:
+        raise HTTPException(401, "Token expired")
+    except jwt.InvalidTokenError:
+        raise HTTPException(401, "Invalid token")
+
+    with get_db() as conn:
+        user = query_one(conn, "SELECT id, email, stripe_customer_id, subscription_status, subscription_id FROM users WHERE id = %s", (payload["user_id"],))
+    if not user:
+        raise HTTPException(401, "User not found")
+    return dict(user)
+
+
+def hash_password(password: str) -> str:
+    return bcrypt.hashpw(password.encode("utf-8"), bcrypt.gensalt()).decode("utf-8")
+
+
+def verify_password(password: str, hashed: str) -> bool:
+    return bcrypt.checkpw(password.encode("utf-8"), hashed.encode("utf-8"))
+
 
 def ensure_db():
     with get_db() as conn:
@@ -135,6 +184,19 @@ def ensure_db():
             cur.execute("UPDATE director_deals SET currency = 'ZAR' WHERE currency IS NULL")
             cur.execute("UPDATE director_deals SET exchange = 'JSE' WHERE exchange IS NULL AND market = 'JSE'")
             cur.execute("UPDATE director_deals SET exchange = 'B3' WHERE exchange IS NULL AND market = 'B3'")
+            # Users table for auth + subscriptions
+            cur.execute("""
+                CREATE TABLE IF NOT EXISTS users (
+                    id SERIAL PRIMARY KEY,
+                    email TEXT UNIQUE NOT NULL,
+                    password_hash TEXT NOT NULL,
+                    stripe_customer_id TEXT,
+                    subscription_status TEXT DEFAULT 'free',
+                    subscription_id TEXT,
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP)
+            """)
+            cur.execute("CREATE INDEX IF NOT EXISTS idx_users_email ON users(email)")
+            cur.execute("CREATE INDEX IF NOT EXISTS idx_users_stripe_cust ON users(stripe_customer_id)")
         conn.commit()
         logger.info("PostgreSQL tables ready")
 
@@ -470,6 +532,186 @@ async def get_companies(sector: Optional[str]=None, include_delisted: bool=False
             status=r.get("status", "listed"),
             last_scraped=r["last_scraped"].isoformat() if r["last_scraped"] else None,
             deal_count=r["deal_count"],market=r.get("market","JSE")) for r in rows]
+
+# ─── Auth ─────────────────────────────────────────────────────────────────────
+
+class AuthRequest(BaseModel):
+    email: str
+    password: str
+
+class AuthResponse(BaseModel):
+    token: str
+    email: str
+    subscription_status: str
+
+class UserResponse(BaseModel):
+    email: str
+    subscription_status: str
+
+
+@app.post("/api/auth/signup", response_model=AuthResponse)
+async def signup(req: AuthRequest):
+    email = req.email.strip().lower()
+    if not email or "@" not in email:
+        raise HTTPException(400, "Invalid email")
+    if len(req.password) < 6:
+        raise HTTPException(400, "Password must be at least 6 characters")
+
+    pw_hash = hash_password(req.password)
+
+    with get_db() as conn:
+        # Check if email already exists
+        existing = query_one(conn, "SELECT id FROM users WHERE email = %s", (email,))
+        if existing:
+            raise HTTPException(409, "Email already registered")
+
+        with conn.cursor() as cur:
+            cur.execute(
+                "INSERT INTO users (email, password_hash) VALUES (%s, %s) RETURNING id",
+                (email, pw_hash)
+            )
+            user_id = cur.fetchone()[0]
+        conn.commit()
+
+    token = create_token(user_id, email)
+    return AuthResponse(token=token, email=email, subscription_status="free")
+
+
+@app.post("/api/auth/login", response_model=AuthResponse)
+async def login(req: AuthRequest):
+    email = req.email.strip().lower()
+
+    with get_db() as conn:
+        user = query_one(conn, "SELECT id, email, password_hash, subscription_status FROM users WHERE email = %s", (email,))
+
+    if not user or not verify_password(req.password, user["password_hash"]):
+        raise HTTPException(401, "Invalid email or password")
+
+    token = create_token(user["id"], user["email"])
+    return AuthResponse(token=token, email=user["email"], subscription_status=user["subscription_status"] or "free")
+
+
+@app.get("/api/auth/me", response_model=UserResponse)
+async def get_me(authorization: str = Header(None)):
+    user = get_current_user(authorization)
+    return UserResponse(email=user["email"], subscription_status=user["subscription_status"] or "free")
+
+
+# ─── Stripe ──────────────────────────────────────────────────────────────────
+
+@app.post("/api/stripe/create-checkout")
+async def create_checkout(authorization: str = Header(None)):
+    """Create a Stripe Checkout session for the Pro subscription."""
+    user = get_current_user(authorization)
+
+    if not STRIPE_PRICE_ID:
+        raise HTTPException(500, "Stripe not configured")
+
+    # Create or reuse Stripe customer
+    customer_id = user.get("stripe_customer_id")
+    if not customer_id:
+        customer = stripe.Customer.create(email=user["email"])
+        customer_id = customer.id
+        with get_db() as conn:
+            with conn.cursor() as cur:
+                cur.execute("UPDATE users SET stripe_customer_id = %s WHERE id = %s", (customer_id, user["id"]))
+            conn.commit()
+
+    session = stripe.checkout.Session.create(
+        customer=customer_id,
+        payment_method_types=["card"],
+        line_items=[{"price": STRIPE_PRICE_ID, "quantity": 1}],
+        mode="subscription",
+        success_url=f"{APP_URL}/?checkout=success",
+        cancel_url=f"{APP_URL}/?checkout=cancelled",
+    )
+    return {"checkout_url": session.url}
+
+
+@app.post("/api/stripe/webhook")
+async def stripe_webhook(request: Request):
+    """Handle Stripe webhook events to update subscription status."""
+    payload = await request.body()
+    sig = request.headers.get("stripe-signature")
+
+    if not STRIPE_WEBHOOK_SECRET:
+        raise HTTPException(500, "Webhook secret not configured")
+
+    try:
+        event = stripe.Webhook.construct_event(payload, sig, STRIPE_WEBHOOK_SECRET)
+    except ValueError:
+        raise HTTPException(400, "Invalid payload")
+    except stripe.error.SignatureVerificationError:
+        raise HTTPException(400, "Invalid signature")
+
+    event_type = event["type"]
+    data = event["data"]["object"]
+
+    if event_type == "checkout.session.completed":
+        customer_id = data.get("customer")
+        subscription_id = data.get("subscription")
+        if customer_id:
+            with get_db() as conn:
+                with conn.cursor() as cur:
+                    cur.execute(
+                        "UPDATE users SET subscription_status = 'active', subscription_id = %s WHERE stripe_customer_id = %s",
+                        (subscription_id, customer_id)
+                    )
+                conn.commit()
+            logger.info(f"Subscription activated for customer {customer_id}")
+
+    elif event_type in ("customer.subscription.updated", "customer.subscription.deleted"):
+        customer_id = data.get("customer")
+        status = data.get("status")  # active, past_due, canceled, unpaid
+        subscription_id = data.get("id")
+
+        # Map Stripe status to our status
+        if status in ("canceled", "unpaid"):
+            our_status = "free"
+        elif status == "past_due":
+            our_status = "past_due"
+        else:
+            our_status = "active"
+
+        if customer_id:
+            with get_db() as conn:
+                with conn.cursor() as cur:
+                    cur.execute(
+                        "UPDATE users SET subscription_status = %s, subscription_id = %s WHERE stripe_customer_id = %s",
+                        (our_status, subscription_id, customer_id)
+                    )
+                conn.commit()
+            logger.info(f"Subscription updated to '{our_status}' for customer {customer_id}")
+
+    elif event_type == "invoice.payment_failed":
+        customer_id = data.get("customer")
+        if customer_id:
+            with get_db() as conn:
+                with conn.cursor() as cur:
+                    cur.execute(
+                        "UPDATE users SET subscription_status = 'past_due' WHERE stripe_customer_id = %s",
+                        (customer_id,)
+                    )
+                conn.commit()
+            logger.info(f"Payment failed for customer {customer_id}")
+
+    return {"status": "ok"}
+
+
+@app.post("/api/stripe/portal")
+async def customer_portal(authorization: str = Header(None)):
+    """Create a Stripe Customer Portal session to manage subscription."""
+    user = get_current_user(authorization)
+
+    if not user.get("stripe_customer_id"):
+        raise HTTPException(400, "No active subscription to manage")
+
+    session = stripe.billing_portal.Session.create(
+        customer=user["stripe_customer_id"],
+        return_url=f"{APP_URL}/",
+    )
+    return {"portal_url": session.url}
+
 
 # ─── Seed ────────────────────────────────────────────────────────────────────
 
