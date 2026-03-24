@@ -1,8 +1,8 @@
 import { useState, useMemo, useEffect } from "react";
 import api from "./api";
 
-const curSymbol=(c)=>({GBP:"£",USD:"$",EUR:"€",BRL:"R$",ZAR:"R"}[c]||"R");
-const fmtCur=(v,market,currency)=>{const p=currency?curSymbol(currency):market==="B3"?"R$":"R";if(!v)return p+"0";if(v>=1e9)return p+(v/1e9).toFixed(1)+"bn";if(v>=1e6)return p+(v/1e6).toFixed(1)+"m";if(v>=1e3)return p+(v/1e3).toFixed(0)+"k";return p+Math.round(v)};
+const curSymbol=(c)=>({GBP:"£",USD:"$",EUR:"€",ZAR:"R"}[c]||"R");
+const fmtCur=(v,market,currency)=>{const p=currency?curSymbol(currency):"R";if(!v)return p+"0";if(v>=1e9)return p+(v/1e9).toFixed(1)+"bn";if(v>=1e6)return p+(v/1e6).toFixed(1)+"m";if(v>=1e3)return p+(v/1e3).toFixed(0)+"k";return p+Math.round(v)};
 const fmt={zar:v=>fmtCur(v,"JSE"),num:n=>(n||0).toLocaleString("en-ZA"),d:d=>d?new Date(d).toLocaleDateString("en-ZA",{day:"numeric",month:"short",year:"numeric"}):"",full:d=>d?new Date(d).toLocaleDateString("en-ZA",{day:"numeric",month:"long",year:"numeric"}):""};
 
 // Geometric Raven Logo SVG
@@ -94,7 +94,7 @@ function Landing({go}){
           WHERE INSIDERS PUT<br/>THEIR MONEY <span className="em">{"—"}FIRST</span>
         </h1>
         <p className="rise" style={{fontSize:20,color:"var(--g500)",lineHeight:1.65,maxWidth:520,marginTop:28,animationDelay:".08s"}}>
-          Raven tracks every director trade on the JSE and B3 exchanges and turns it into structured, searchable intelligence.
+          Raven tracks every director trade on the JSE and turns it into structured, searchable intelligence.
         </p>
         <div className="rise" style={{display:"flex",gap:12,marginTop:32,animationDelay:".14s"}}>
           <button onClick={()=>go("dashboard")} style={{padding:"14px 32px",borderRadius:10,background:"var(--or)",color:"#fff",fontSize:16,fontWeight:700,border:"none",cursor:"pointer",fontFamily:"var(--f)"}}>View Live Deals</button>
@@ -193,7 +193,7 @@ function Dash({go,setTicker}){
   const [q,setQ]=useState("");
   const [mv,setMv]=useState(0);
   const [period,setPeriod]=useState("All");
-  const [market,setMarket]=useState(null); // null=all, "JSE", "B3"
+  const [market,setMarket]=useState(null); // null=all, "JSE"
 
   const [allDeals,setAllDeals]=useState([]);
   const [clusters,setClusters]=useState([]);
@@ -259,7 +259,7 @@ function Dash({go,setTicker}){
   },[period]);
 
   const fd=useMemo(()=>allDeals.filter(t=>{
-    // Filter out non-SA tickers (Brazilian B3 junk safety net)
+    // Filter out non-SA tickers (safety net)
     if(t.ticker&&(/^\d/.test(t.ticker)||(/\d$/.test(t.ticker)&&t.ticker.length>=4)))return false;
     if(tf!=="All"&&t.transaction_type!==tf)return false;
     if(q){const s=q.toLowerCase();if(![t.company,t.ticker,t.director].some(x=>(x||"").toLowerCase().includes(s)))return false}
@@ -297,9 +297,7 @@ function Dash({go,setTicker}){
           ))}
         </div>
         <div style={{display:"flex",gap:4,alignItems:"center",marginBottom:-2}}>
-          {[{l:"All",v:null},{l:"🇿🇦 JSE",v:"JSE"},{l:"🇧🇷 B3",v:"B3"}].map(m=>(
-            <button key={m.l} onClick={()=>setMarket(m.v)} style={{padding:"5px 12px",borderRadius:7,border:"none",background:market===m.v?"var(--or)":"transparent",color:market===m.v?"#fff":"var(--g400)",fontSize:11,fontFamily:"var(--mono)",fontWeight:600,cursor:"pointer"}}>{m.l}</button>
-          ))}
+          {/* Exchange filter removed — JSE only for now */}
         </div>
       </div>
 
@@ -490,14 +488,13 @@ function Pricing({go}){
   const chk=()=><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--or)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>;
   const plans=[
     {name:"FREE",price:"R0",per:"forever",desc:"See what's happening on the JSE.",feats:["Latest 10 director deals","Basic search","24-hour delay"],dark:false},
-    {name:"PRO",price:"R99",per:"/month",desc:"Full access for serious investors.",feats:["All deals in real-time","Cluster buy alerts","Sector flow analysis","Company profiles","Email watchlist alerts","CSV export"],dark:true,pop:true},
-    {name:"API",price:"R499",per:"/month",desc:"For fintechs and developers.",feats:["Everything in Pro","REST API access","10,000 requests/month","Webhook notifications","Bulk data export","Priority support"],dark:false},
+    {name:"PRO",price:"R70",per:"/month",desc:"Full access for serious investors.",feats:["All deals in real-time","Cluster buy alerts","Sector flow analysis","Company profiles","Email watchlist alerts","CSV export"],dark:true,pop:true},
   ];
   return(
     <div style={{maxWidth:1060,margin:"0 auto",padding:"56px 40px 72px"}}>
       <h1 className="rise" style={{fontSize:52,fontWeight:800,letterSpacing:"-.05em",textTransform:"uppercase",textAlign:"center"}}>SIMPLE <span className="em">PRICING</span></h1>
       <p className="rise" style={{textAlign:"center",color:"var(--g500)",fontSize:16,marginTop:12,marginBottom:48,animationDelay:".05s"}}>Start free. Upgrade when Raven proves its value.</p>
-      <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:16}}>
+      <div style={{display:"grid",gridTemplateColumns:"repeat(2,1fr)",gap:16,maxWidth:700,margin:"0 auto"}}>
         {plans.map((p,i)=>(
           <div key={i} className="rise" style={{padding:32,background:p.dark?"var(--black)":"var(--white)",border:p.dark?"none":"1.5px solid var(--g200)",borderRadius:16,color:p.dark?"#fff":"var(--g900)",display:"flex",flexDirection:"column",animationDelay:(.1+i*.06)+"s",position:"relative"}}>
             {p.pop&&<div style={{position:"absolute",top:16,right:16,padding:"4px 12px",borderRadius:6,background:"var(--or)",fontSize:11,fontWeight:700,color:"#fff",textTransform:"uppercase",letterSpacing:".04em"}}>Popular</div>}
