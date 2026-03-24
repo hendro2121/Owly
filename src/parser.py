@@ -317,7 +317,17 @@ def classify_transaction(text: str, llm_fallback: bool = False, api_key: str = N
         "capitalisation issue", "scrip dividend", "share split",
         "share consolidation", "bonus issue",
     ]
+    hedge_keywords = [
+        "collar hedge", "off-market collar", "hedge termination",
+        "early termination of", "mark-to-market",
+        "put option", "collar arrangement", "hedging arrangement",
+        "zero-cost collar", "prepaid forward",
+        "settle the mark-to-market", "funding transaction",
+    ]
 
+    for kw in hedge_keywords:
+        if kw in lower:
+            return "HedgeSettlement"
     for kw in options_keywords:
         if kw in lower:
             return "OptionsExercise"

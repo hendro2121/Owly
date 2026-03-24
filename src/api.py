@@ -311,7 +311,7 @@ async def health():
 async def get_deals(
     page: int=Query(1,ge=1), per_page: int=Query(50,ge=1,le=200),
     ticker: Optional[str]=None, director: Optional[str]=None,
-    transaction_type: Optional[str]=Query(None,pattern="^(Buy|Sell|Vesting|TaxSale)$"),
+    transaction_type: Optional[str]=Query(None,pattern="^(Buy|Sell|Vesting|TaxSale|HedgeSettlement)$"),
     exclude_non_discretionary: bool=Query(True, description="Exclude vestings and tax sales"),
     market: Optional[str]=Query(None, description="Filter by market: JSE, B3, or omit for all"),
     sector: Optional[str]=None, min_value: Optional[float]=None,
@@ -949,7 +949,7 @@ async def reparse_raw_announcements(
 
                 # Parse
                 deals = parser.parse(full_text, ticker=ticker, company=company)
-                deals = [d for d in deals if d.transaction_type in ("Buy", "Sell", "Vesting", "TaxSale", "OptionsExercise")]
+                deals = [d for d in deals if d.transaction_type in ("Buy", "Sell", "Vesting", "TaxSale", "OptionsExercise", "HedgeSettlement")]
 
                 if deals and ticker:
                     # Delete old deals from this source URL so we get fresh parses
@@ -1056,7 +1056,7 @@ async def debug_test_parse(secret: str = Query(...), ticker: str = Query(...)):
             full_text = row["full_text"] or ""
             try:
                 deals = parser.parse(full_text, ticker=row["ticker"], company=row["company"])
-                valid = [d for d in deals if d.transaction_type in ("Buy", "Sell", "Vesting", "TaxSale", "OptionsExercise")]
+                valid = [d for d in deals if d.transaction_type in ("Buy", "Sell", "Vesting", "TaxSale", "OptionsExercise", "HedgeSettlement")]
                 results.append({
                     "raw_id": row["id"],
                     "title": row["title"],

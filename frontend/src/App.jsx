@@ -32,9 +32,9 @@ body{background:var(--white);font-family:var(--f);color:var(--g900);-webkit-font
 .em{font-style:italic;color:var(--or)}
 `;
 
-const Tag=({type})=>{const b=type==="Buy";return<span style={{display:"inline-flex",alignItems:"center",gap:3,padding:"3px 9px",borderRadius:6,fontSize:11,fontWeight:600,fontFamily:"var(--mono)",background:b?"var(--gn-bg)":"var(--rd-bg)",color:b?"var(--gn)":"var(--rd)"}}>
-  <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d={b?"M12 19V5M5 12l7-7 7 7":"M12 5v14M5 12l7 7 7-7"}/></svg>
-  {type}</span>};
+const Tag=({type})=>{const b=type==="Buy";const nd=["Vesting","TaxSale","OptionsExercise","HedgeSettlement","Conversion"].includes(type);const label=type==="HedgeSettlement"?"Hedge":type==="OptionsExercise"?"Options":type==="TaxSale"?"Tax Sale":type;return<span style={{display:"inline-flex",alignItems:"center",gap:3,padding:"3px 9px",borderRadius:6,fontSize:11,fontWeight:600,fontFamily:"var(--mono)",background:nd?"var(--g100)":b?"var(--gn-bg)":"var(--rd-bg)",color:nd?"var(--g500)":b?"var(--gn)":"var(--rd)"}}>
+  {!nd&&<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d={b?"M12 19V5M5 12l7-7 7 7":"M12 5v14M5 12l7 7 7-7"}/></svg>}
+  {label}</span>};
 
 const Loader = () => (
   <div style={{display:"flex",justifyContent:"center",alignItems:"center",padding:"80px 0"}}>
