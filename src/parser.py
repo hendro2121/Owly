@@ -658,11 +658,12 @@ class RegexParser:
         if price and re.search(r'price\s+per\s+(?:share|security)\s*\(cents?\)', section, re.IGNORECASE):
             price = price / 100.0
 
-        # Calculate value if not provided
-        if not value and shares and price:
+        # Always prefer calculated value (price × shares) over extracted value
+        # to avoid format parsing issues (e.g. European decimal "2 687 827,55")
+        if shares and price:
             value = shares * price
-        # Calculate price if not provided
-        if not price and shares and value:
+        # Calculate price if not provided but value is
+        elif not price and shares and value:
             price = value / shares if shares > 0 else 0.0
 
         # Confidence scoring
