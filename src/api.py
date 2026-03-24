@@ -508,8 +508,10 @@ async def refresh_endpoint(
                     cur.execute("DELETE FROM director_deals WHERE ticker = 'ON'")
                     cur.execute("DELETE FROM raw_announcements WHERE ticker = 'ON'")
                     cur.execute("DELETE FROM companies WHERE ticker = 'ON' AND name NOT ILIKE '%%ON%%'")
-                    # Clean up deals with 0 shares (bad parse artifacts)
-                    cur.execute("DELETE FROM director_deals WHERE shares = 0 OR shares IS NULL")
+                    # Clean up Brazilian B3 data that shouldn't be in JSE feed
+                    cur.execute("DELETE FROM director_deals WHERE market = 'B3'")
+                    cur.execute("DELETE FROM director_deals WHERE ticker ~ '^[0-9]' OR ticker LIKE '%%3' OR ticker LIKE '%%4'")
+                    cur.execute("DELETE FROM companies WHERE market = 'B3'")
                 conn.commit()
                 logger.info("Cleaned up bad director name records and bogus tickers")
 
@@ -681,6 +683,16 @@ async def reparse_raw_announcements(
                 deals = parser.parse(full_text, ticker=ticker, company=company)
                 deals = [d for d in deals if d.transaction_type in ("Buy", "Sell", "Vesting", "TaxSale", "OptionsExercise")]
 
+                if deals and ticker:
+                    # Delete old deals from this source URL so we get fresh parses
+                    with conn.cursor() as cur:
+                        cur.execute(
+                            "DELETE FROM director_deals WHERE source_url = %s",
+                            (row["url"],)
+                        )
+                        results["deals_deleted"] = results.get("deals_deleted", 0) + cur.rowcount
+                    conn.commit()
+
                 for deal in deals:
                     deal_dict = asdict(deal)
                     deal_dict["ticker"] = ticker
@@ -695,21 +707,7 @@ async def reparse_raw_announcements(
                         if not _re.match(r'^\d{4}-\d{2}-\d{2}$', str(tx_date)):
                             tx_date = None  # Invalid date format, set to NULL
 
-                    # Skip if duplicate already exists
                     with conn.cursor() as cur:
-                        cur.execute("""
-                            SELECT id FROM director_deals
-                            WHERE ticker=%s AND director=%s
-                              AND (transaction_date=%s OR (transaction_date IS NULL AND %s IS NULL))
-                              AND shares=%s AND transaction_type=%s
-                        """, (
-                            deal_dict["ticker"], deal_dict["director"],
-                            tx_date, tx_date,
-                            deal_dict["shares"], deal_dict["transaction_type"],
-                        ))
-                        if cur.fetchone():
-                            continue
-
                         cur.execute("""
                             INSERT INTO director_deals
                             (ticker, company, director, role, transaction_date, announcement_date,
