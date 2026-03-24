@@ -97,14 +97,16 @@ PATTERNS = {
     "transaction_date": [
         # "Date of transaction : 12 March 2026" / "Date of transaction 1: 20 March 2026" (Hudaco numbered)
         # "Date of the transaction : 20 March 2026" (UK MAR format)
-        r"(?:Date\s+(?:of\s+)?(?:the\s+)?transaction(?:s)?(?:\s+\d+)?(?:\s+effected)?)\s*[:\-]?\s*(.+?)(?:\n|$)",
+        # NOTE: (?:\s+\d+(?=\s*[:\-])) requires numbered suffix (e.g. "1:") to be followed by colon/dash
+        # to prevent eating the day number from "12 March 2026" when space-separated
+        r"(?:Date\s+(?:of\s+)?(?:the\s+)?transaction(?:s)?(?:\s+\d+(?=\s*[:\-]))?(?:\s+effected)?)\s*[:\-]?\s*(.+?)(?:\n|$)",
         # "Date of dealing : 16 March 2026" (KAL style — no numbered suffix)
         r"(?:Date\s+(?:of\s+)?(?:the\s+)?dealing)\s*[:\-]?\s*(.+?)(?:\n|$)",
         # "Transaction date : 11 March 2026" / "Transaction date             20 March 2026"
         r"(?:Transaction\s+date)\s*[:\-]?\s*(.+?)(?:\n|$)",
         r"(?:^|\n)\s*Transaction\s+date\s{2,}(.+?)(?:\n|$)",
         # "Date of transaction             11 March 2026" (space-separated)
-        r"(?:^|\n)\s*Date\s+of\s+(?:the\s+)?transaction(?:\s+\d+)?\s{2,}(.+?)(?:\n|$)",
+        r"(?:^|\n)\s*Date\s+of\s+(?:the\s+)?transaction(?:\s+\d+(?=\s*[:\-]))?\s{2,}(.+?)(?:\n|$)",
         r"(?:^|\n)\s*Date\s+of\s+(?:the\s+)?dealing\s{2,}(.+?)(?:\n|$)",
         # "DATE OF TRANSACTION" / "DATE OF DEALING" (uppercase, Argent/KAL)
         r"DATE\s+OF\s+(?:TRANSACTION|DEALING)\s+(.+?)(?:\n|$)",
@@ -113,11 +115,11 @@ PATTERNS = {
         # "Nature of transaction : On-market purchase" / "Nature of transaction 1: Acquisition..."
         # "Nature of the transaction: Acquisition" (UK MAR format)
         # Allow multi-line capture for continuation lines (HCI style wraps across lines)
-        r"(?:Nature\s+of\s+(?:the\s+)?transaction(?:s)?(?:\s+\d+)?)\s*[:\-]?\s*(.+(?:\n\s{20,}.+)*)",
+        r"(?:Nature\s+of\s+(?:the\s+)?transaction(?:s)?(?:\s+\d+(?=\s*[:\-]))?)\s*[:\-]?\s*(.+(?:\n\s{20,}.+)*)",
         # "Nature of dealing: Purchase..." (KAL style — no numbered suffix)
         r"(?:Nature\s+of\s+(?:the\s+)?dealing)\s*[:\-]?\s*(.+(?:\n\s{20,}.+)*)",
         # "Nature of transaction             On market purchase" (space-separated, multi-line)
-        r"(?:^|\n)\s*Nature\s+of\s+(?:the\s+)?transaction(?:\s+\d+)?\s{2,}(.+(?:\n\s{20,}.+)*)",
+        r"(?:^|\n)\s*Nature\s+of\s+(?:the\s+)?transaction(?:\s+\d+(?=\s*[:\-]))?\s{2,}(.+(?:\n\s{20,}.+)*)",
         r"(?:^|\n)\s*Nature\s+of\s+(?:the\s+)?dealing\s{2,}(.+(?:\n\s{20,}.+)*)",
         r"(?:Type\s+of\s+transaction)\s*[:\-]?\s*(.+?)(?:\n|$)",
         r"NATURE\s+OF\s+(?:TRANSACTION|DEALING)\s+(.+?)(?:\n|$)",
@@ -133,16 +135,16 @@ PATTERNS = {
     ],
     "price": [
         # "Volume weighted average price per security : R17.2004" / "Weighted average price per security: ZAR 7.9037"
-        r"(?:(?:Volume\s+)?[Ww]eighted\s+average\s+(?:purchase\s+)?price(?:\s+per\s+(?:share|security))?)\s*[:\-]?\s*(?:R|ZAR|GBP)?\s*([\d\s,\.]+\s*(?:cps)?)",
-        # "Purchase price per share                         16 620 cps"
-        r"(?:(?:Purchase\s+)?[Pp]rice\s+per\s+(?:share|security))\s*[:\-]?\s*(?:R|ZAR|GBP)?\s*([\d\s,\.]+\s*(?:cps)?)",
+        r"(?:(?:Volume\s+)?[Ww]eighted\s+average\s+(?:purchase\s+)?price(?:\s+per\s+(?:share|security))?)\s*(?:\([^)]*\))?\s*[:\-]?\s*(?:R|ZAR|GBP)?\s*([\d\s,\.]+\s*(?:cps)?)",
+        # "Purchase price per share (cents)                 16 620" / "Price per share : R195.09"
+        r"(?:(?:Purchase\s+)?[Pp]rice\s+per\s+(?:share|security))\s*(?:\([^)]*\))?\s*[:\-]?\s*(?:R|ZAR|GBP)?\s*([\d\s,\.]+\s*(?:cps)?)",
         r"PRICE\s+PER\s+SECURITY\s+(?:R|ZAR|GBP)?\s*([\d\s,\.]+\s*(?:cps)?)",
         # "Price per security : ZAR 134.00"
-        r"(?:Price\s+per\s+security)\s*[:\-]?\s*(?:R|ZAR|GBP)?\s*([\d\s,\.]+\s*(?:cps)?)",
+        r"(?:Price\s+per\s+security)\s*(?:\([^)]*\))?\s*[:\-]?\s*(?:R|ZAR|GBP)?\s*([\d\s,\.]+\s*(?:cps)?)",
         # "Deemed market price per share" (Gold Fields — value may be on next line)
-        r"(?:Deemed\s+market\s+price\s+per\s+share)\s*[:\-]?\s*(?:R|ZAR|GBP)?\s*([\d\s,\.]+\s*(?:cps)?)",
+        r"(?:Deemed\s+market\s+price\s+per\s+share)\s*(?:\([^)]*\))?\s*[:\-]?\s*(?:R|ZAR|GBP)?\s*([\d\s,\.]+\s*(?:cps)?)",
         # "Market price                 R48.99" (Sibanye style)
-        r"(?:Market\s+price)\s*[:\-]?\s*(?:R|ZAR|GBP)?\s*([\d\s,\.]+\s*(?:cps)?)",
+        r"(?:Market\s+price)\s*(?:\([^)]*\))?\s*[:\-]?\s*(?:R|ZAR|GBP)?\s*([\d\s,\.]+\s*(?:cps)?)",
         # Prose: "at GBP1.312 per share" / "at a price of R195.09 per share"
         r"at\s+(?:a\s+)?(?:(?:an?\s+)?average\s+)?price\s+of\s+(?:R|ZAR|GBP)?\s*([\d\s,\.]+)\s+per\s+share",
         r"at\s+(?:R|ZAR|GBP)([\d\s,\.]+)\s+per\s+share",
@@ -153,7 +155,8 @@ PATTERNS = {
         # "TOTAL RAND VALUE OF SECURITIES TRANSACTED  R39,732" / "TOTAL RAND VALUE OF SECURITIES TRADED  R62,286.00"
         r"TOTAL\s+RAND\s+VALUE\s+OF\s+SECURITIES\s+(?:(?:TRANSACTED|TRADED)\s+)?(?:R|ZAR|GBP)?\s*([\d\s,\.]+)",
         # "Value of the transaction : R10,568,357.02" / "Value of transaction 1: R2 931 309.89" (Hudaco numbered)
-        r"(?:(?:Total\s+)?[Vv]alue\s+of\s+(?:the\s+)?transactions?(?:\s+\d+)?)\s*[:\-]?\s*(?:R|ZAR|GBP)?\s*([\d\s,\.]+)",
+        # "Value of transaction (Rand)                       7 830 845" (HCI space-padded with unit in parens)
+        r"(?:(?:Total\s+)?[Vv]alue\s+of\s+(?:the\s+)?transactions?(?:\s+\d+(?=\s*[:\-]))?)\s*(?:\([^)]*\))?\s*[:\-]?\s*(?:R|ZAR|GBP)?\s*([\d\s,\.]+)",
         # "Aggregated information: Acquisition value of GBP7,478.40" (UK MAR)
         r"(?:Aggregated\s+information)\s*[:\-]?\s*\w+\s+value\s+of\s+(?:R|ZAR|GBP)?\s*([\d\s,\.]+)",
         # "Deemed market value : R51,721,659.78"
@@ -640,6 +643,10 @@ class RegexParser:
         shares = clean_int(shares_raw) if shares_raw else 0
         price = clean_number(price_raw) if price_raw else 0.0
         value = clean_number(value_raw) if value_raw else 0.0
+
+        # If price label says "(cents)" or "(cps)", convert to Rands
+        if price and re.search(r'price\s+per\s+(?:share|security)\s*\(cents?\)', section, re.IGNORECASE):
+            price = price / 100.0
 
         # Calculate value if not provided
         if not value and shares and price:
