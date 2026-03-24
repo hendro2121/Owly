@@ -757,6 +757,48 @@ async def debug_raw_tickers(secret: str = Query(...)):
         return {"tickers": {r["ticker"]: r["cnt"] for r in rows}}
 
 
+@app.get("/api/debug/test-parse")
+async def debug_test_parse(secret: str = Query(...), ticker: str = Query(...)):
+    """Test parsing raw_announcements for a specific ticker — shows why deals may be missing."""
+    expected = os.environ.get("CRON_SECRET", "")
+    if not expected or secret != expected:
+        raise HTTPException(403, "Invalid secret")
+
+    from parser import SENSParser
+    from dataclasses import asdict
+
+    parser = SENSParser()
+    results = []
+
+    with get_db() as conn:
+        rows = query(conn, "SELECT id, ticker, company, title, url, full_text FROM raw_announcements WHERE ticker = %s", (ticker,))
+        for row in rows:
+            full_text = row["full_text"] or ""
+            try:
+                deals = parser.parse(full_text, ticker=row["ticker"], company=row["company"])
+                valid = [d for d in deals if d.transaction_type in ("Buy", "Sell", "Vesting", "TaxSale", "OptionsExercise")]
+                results.append({
+                    "raw_id": row["id"],
+                    "title": row["title"],
+                    "url": row["url"],
+                    "text_length": len(full_text),
+                    "text_preview": full_text[:500],
+                    "total_parsed": len(deals),
+                    "valid_deals": len(valid),
+                    "deals": [asdict(d) for d in valid],
+                    "all_deals_raw": [{"director": d.director, "type": d.transaction_type, "date": d.transaction_date, "shares": d.shares} for d in deals],
+                })
+            except Exception as e:
+                results.append({
+                    "raw_id": row["id"],
+                    "title": row["title"],
+                    "error": str(e),
+                    "text_preview": full_text[:500],
+                })
+
+    return {"ticker": ticker, "raw_count": len(rows), "results": results}
+
+
 @app.api_route("/api/ingest-url", methods=["GET", "POST"])
 async def ingest_url(
     secret: str = Query(..., description="CRON_SECRET to authorize"),
