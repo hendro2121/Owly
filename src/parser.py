@@ -211,11 +211,12 @@ def clean_number(text: str) -> Optional[float]:
     # Remove currency prefix and cps suffix
     text = re.sub(r'^[R\s]+|^ZAR\s*|^GBP\s*|^EUR\s*|^€\s*', '', text.strip())
     text = re.sub(r'\s*cps.*$', '', text, flags=re.IGNORECASE).strip()
-    # If there's a decimal point, preserve it; remove all other non-digit chars
-    if '.' in text:
-        cleaned = re.sub(r'[\s,]', '', text)
-    else:
-        cleaned = re.sub(r'[\s,]', '', text)
+    # European format: "2 687 827,55" — comma as decimal separator, spaces as thousands
+    # Detect: comma followed by exactly 1-2 digits at end, with no dot present
+    if re.search(r',\d{1,2}$', text) and '.' not in text:
+        text = text.replace(' ', '').replace(',', '.')
+    # Remove all remaining thousand separators (commas and spaces)
+    cleaned = re.sub(r'[\s,]', '', text)
     try:
         val = float(cleaned)
         if is_cps:
