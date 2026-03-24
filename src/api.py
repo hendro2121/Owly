@@ -509,11 +509,13 @@ async def refresh_endpoint(
                     cur.execute("DELETE FROM raw_announcements WHERE ticker = 'ON'")
                     cur.execute("DELETE FROM companies WHERE ticker = 'ON' AND name NOT ILIKE '%%ON%%'")
                     # Clean up Brazilian B3 data that shouldn't be in JSE feed
-                    # Brazilian tickers: end in digit (VALE3, GOLL4), or are CNPJ numbers
+                    # Delete everything pre-2025 (all Brazilian), CNPJ tickers, B3 tickers ending in digit
+                    cur.execute("DELETE FROM director_deals WHERE transaction_date < '2025-01-01'")
                     cur.execute("DELETE FROM director_deals WHERE market = 'B3'")
                     cur.execute("DELETE FROM director_deals WHERE ticker ~ '^[0-9]'")
-                    cur.execute("DELETE FROM director_deals WHERE ticker ~ '[0-9]$' AND length(ticker) >= 5")
+                    cur.execute("DELETE FROM director_deals WHERE ticker ~ '[0-9]$' AND length(ticker) >= 4")
                     cur.execute("DELETE FROM companies WHERE market = 'B3'")
+                    cur.execute("DELETE FROM companies WHERE ticker ~ '^[0-9]' OR (ticker ~ '[0-9]$' AND length(ticker) >= 4)")
                 conn.commit()
                 logger.info("Cleaned up bad director name records and bogus tickers")
 
@@ -623,6 +625,20 @@ async def cleanup_bad_directors(
                     (pattern,)
                 )
                 total_deleted += cur.rowcount
+            # Delete all pre-2025 data (Brazilian B3 junk)
+            cur.execute("DELETE FROM director_deals WHERE transaction_date < '2025-01-01'")
+            total_deleted += cur.rowcount
+            # Delete CNPJ-style tickers and B3 tickers ending in digit
+            cur.execute("DELETE FROM director_deals WHERE ticker ~ '^[0-9]'")
+            total_deleted += cur.rowcount
+            cur.execute("DELETE FROM director_deals WHERE ticker ~ '[0-9]$' AND length(ticker) >= 4")
+            total_deleted += cur.rowcount
+            # Clean up companies table too
+            cur.execute("DELETE FROM companies WHERE market = 'B3'")
+            cur.execute("DELETE FROM companies WHERE ticker ~ '^[0-9]' OR (ticker ~ '[0-9]$' AND length(ticker) >= 4)")
+            # Also delete from raw_announcements to prevent re-ingestion
+            cur.execute("DELETE FROM raw_announcements WHERE ticker ~ '^[0-9]' OR (ticker ~ '[0-9]$' AND length(ticker) >= 4)")
+            cur.execute("DELETE FROM raw_announcements WHERE source = 'B3'")
         conn.commit()
 
     return {"status": "done", "deals_deleted": total_deleted}
