@@ -509,8 +509,10 @@ async def refresh_endpoint(
                     cur.execute("DELETE FROM raw_announcements WHERE ticker = 'ON'")
                     cur.execute("DELETE FROM companies WHERE ticker = 'ON' AND name NOT ILIKE '%%ON%%'")
                     # Clean up Brazilian B3 data that shouldn't be in JSE feed
+                    # Brazilian tickers: end in digit (VALE3, GOLL4), or are CNPJ numbers
                     cur.execute("DELETE FROM director_deals WHERE market = 'B3'")
-                    cur.execute("DELETE FROM director_deals WHERE ticker ~ '^[0-9]' OR ticker LIKE '%%3' OR ticker LIKE '%%4'")
+                    cur.execute("DELETE FROM director_deals WHERE ticker ~ '^[0-9]'")
+                    cur.execute("DELETE FROM director_deals WHERE ticker ~ '[0-9]$' AND length(ticker) >= 5")
                     cur.execute("DELETE FROM companies WHERE market = 'B3'")
                 conn.commit()
                 logger.info("Cleaned up bad director name records and bogus tickers")
@@ -742,6 +744,17 @@ async def reparse_raw_announcements(
                     pass
 
     return results
+
+
+@app.get("/api/debug/raw-tickers")
+async def debug_raw_tickers(secret: str = Query(...)):
+    """List distinct tickers in raw_announcements for debugging."""
+    expected = os.environ.get("CRON_SECRET", "")
+    if not expected or secret != expected:
+        raise HTTPException(403, "Invalid secret")
+    with get_db() as conn:
+        rows = query(conn, "SELECT DISTINCT ticker, count(*) as cnt FROM raw_announcements GROUP BY ticker ORDER BY ticker")
+        return {"tickers": {r["ticker"]: r["cnt"] for r in rows}}
 
 
 @app.api_route("/api/ingest-url", methods=["GET", "POST"])
