@@ -763,6 +763,20 @@ async def reparse_raw_announcements(
                 except Exception:
                     pass
 
+        # Deduplicate: remove duplicate deals keeping the lowest id
+        with conn.cursor() as cur:
+            cur.execute("""
+                DELETE FROM director_deals a USING director_deals b
+                WHERE a.id > b.id
+                AND a.ticker = b.ticker
+                AND a.director = b.director
+                AND a.transaction_date = b.transaction_date
+                AND a.transaction_type = b.transaction_type
+                AND a.shares = b.shares
+            """)
+            results["duplicates_removed"] = cur.rowcount
+        conn.commit()
+
     return results
 
 

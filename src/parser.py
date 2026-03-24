@@ -135,34 +135,34 @@ PATTERNS = {
     ],
     "price": [
         # "Volume weighted average price per security : R17.2004" / "Weighted average price per security: ZAR 7.9037"
-        r"(?:(?:Volume\s+)?[Ww]eighted\s+average\s+(?:purchase\s+)?price(?:\s+per\s+(?:share|security))?)\s*(?:\([^)]*\))?\s*[:\-]?\s*(?:R|ZAR|GBP)?\s*([\d\s,\.]+\s*(?:cps)?)",
+        r"(?:(?:Volume\s+)?[Ww]eighted\s+average\s+(?:purchase\s+)?price(?:\s+per\s+(?:share|security))?)\s*(?:\([^)]*\))?\s*[:\-]?\s*(?:R|ZAR|GBP|EUR|€)?\s*([\d\s,\.]+\s*(?:cps)?)",
         # "Purchase price per share (cents)                 16 620" / "Price per share : R195.09"
-        r"(?:(?:Purchase\s+)?[Pp]rice\s+per\s+(?:share|security))\s*(?:\([^)]*\))?\s*[:\-]?\s*(?:R|ZAR|GBP)?\s*([\d\s,\.]+\s*(?:cps)?)",
-        r"PRICE\s+PER\s+SECURITY\s+(?:R|ZAR|GBP)?\s*([\d\s,\.]+\s*(?:cps)?)",
+        r"(?:(?:Purchase\s+)?[Pp]rice\s+per\s+(?:share|security))\s*(?:\([^)]*\))?\s*[:\-]?\s*(?:R|ZAR|GBP|EUR|€)?\s*([\d\s,\.]+\s*(?:cps)?)",
+        r"PRICE\s+PER\s+SECURITY\s+(?:R|ZAR|GBP|EUR|€)?\s*([\d\s,\.]+\s*(?:cps)?)",
         # "Price per security : ZAR 134.00"
-        r"(?:Price\s+per\s+security)\s*(?:\([^)]*\))?\s*[:\-]?\s*(?:R|ZAR|GBP)?\s*([\d\s,\.]+\s*(?:cps)?)",
+        r"(?:Price\s+per\s+security)\s*(?:\([^)]*\))?\s*[:\-]?\s*(?:R|ZAR|GBP|EUR|€)?\s*([\d\s,\.]+\s*(?:cps)?)",
         # "Deemed market price per share" (Gold Fields — value may be on next line)
-        r"(?:Deemed\s+market\s+price\s+per\s+share)\s*(?:\([^)]*\))?\s*[:\-]?\s*(?:R|ZAR|GBP)?\s*([\d\s,\.]+\s*(?:cps)?)",
+        r"(?:Deemed\s+market\s+price\s+per\s+share)\s*(?:\([^)]*\))?\s*[:\-]?\s*(?:R|ZAR|GBP|EUR|€)?\s*([\d\s,\.]+\s*(?:cps)?)",
         # "Market price                 R48.99" (Sibanye style)
-        r"(?:Market\s+price)\s*(?:\([^)]*\))?\s*[:\-]?\s*(?:R|ZAR|GBP)?\s*([\d\s,\.]+\s*(?:cps)?)",
+        r"(?:Market\s+price)\s*(?:\([^)]*\))?\s*[:\-]?\s*(?:R|ZAR|GBP|EUR|€)?\s*([\d\s,\.]+\s*(?:cps)?)",
         # Prose: "at GBP1.312 per share" / "at a price of R195.09 per share"
-        r"at\s+(?:a\s+)?(?:(?:an?\s+)?average\s+)?price\s+of\s+(?:R|ZAR|GBP)?\s*([\d\s,\.]+)\s+per\s+share",
+        r"at\s+(?:a\s+)?(?:(?:an?\s+)?average\s+)?price\s+of\s+(?:R|ZAR|GBP|EUR|€)?\s*([\d\s,\.]+)\s+per\s+share",
         r"at\s+(?:R|ZAR|GBP)([\d\s,\.]+)\s+per\s+share",
     ],
     "value": [
         # "Total value : ZAR 7 847 631.15" / "Total value: R286 679.07"
-        r"(?:Total\s+value(?:\s+of\s+(?:the\s+)?(?:transactions?|securities))?)\s*[:\-]?\s*(?:R|ZAR|GBP)?\s*([\d\s,\.]+)",
+        r"(?:Total\s+value(?:\s+of\s+(?:the\s+)?(?:transactions?|securities))?)\s*[:\-]?\s*(?:R|ZAR|GBP|EUR|€)?\s*([\d\s,\.]+)",
         # "TOTAL RAND VALUE OF SECURITIES TRANSACTED  R39,732" / "TOTAL RAND VALUE OF SECURITIES TRADED  R62,286.00"
-        r"TOTAL\s+RAND\s+VALUE\s+OF\s+SECURITIES\s+(?:(?:TRANSACTED|TRADED)\s+)?(?:R|ZAR|GBP)?\s*([\d\s,\.]+)",
+        r"TOTAL\s+RAND\s+VALUE\s+OF\s+SECURITIES\s+(?:(?:TRANSACTED|TRADED)\s+)?(?:R|ZAR|GBP|EUR|€)?\s*([\d\s,\.]+)",
         # "Value of the transaction : R10,568,357.02" / "Value of transaction 1: R2 931 309.89" (Hudaco numbered)
         # "Value of transaction (Rand)                       7 830 845" (HCI space-padded with unit in parens)
-        r"(?:(?:Total\s+)?[Vv]alue\s+of\s+(?:the\s+)?transactions?(?:\s+\d+(?=\s*[:\-]))?)\s*(?:\([^)]*\))?\s*[:\-]?\s*(?:R|ZAR|GBP)?\s*([\d\s,\.]+)",
+        r"(?:(?:Total\s+)?[Vv]alue\s+of\s+(?:the\s+)?transactions?(?:\s+\d+(?=\s*[:\-]))?)\s*(?:\([^)]*\))?\s*[:\-]?\s*(?:R|ZAR|GBP|EUR|€)?\s*([\d\s,\.]+)",
         # "Aggregated information: Acquisition value of GBP7,478.40" (UK MAR)
-        r"(?:Aggregated\s+information)\s*[:\-]?\s*\w+\s+value\s+of\s+(?:R|ZAR|GBP)?\s*([\d\s,\.]+)",
+        r"(?:Aggregated\s+information)\s*[:\-]?\s*\w+\s+value\s+of\s+(?:R|ZAR|GBP|EUR|€)?\s*([\d\s,\.]+)",
         # "Deemed market value : R51,721,659.78"
-        r"(?:Deemed\s+market\s+value)\s*[:\-]?\s*(?:R|ZAR|GBP)?\s*([\d\s,\.]+)",
+        r"(?:Deemed\s+market\s+value)\s*[:\-]?\s*(?:R|ZAR|GBP|EUR|€)?\s*([\d\s,\.]+)",
         # "Total rand value" / "Total cost"
-        r"(?:Total\s+(?:rand\s+)?(?:value|cost))\s*[:\-]?\s*(?:R|ZAR|GBP)?\s*([\d\s,\.]+)",
+        r"(?:Total\s+(?:rand\s+)?(?:value|cost))\s*[:\-]?\s*(?:R|ZAR|GBP|EUR|€)?\s*([\d\s,\.]+)",
     ],
     "class_of_securities": [
         r"(?:(?:Type\s+and\s+)?[Cc]lass\s+of\s+(?:shares|securities)(?:\s*/\s*description[^:]*)?)\s*[:\-]?\s*(.+?)(?:\n|$)",
@@ -209,7 +209,7 @@ def clean_number(text: str) -> Optional[float]:
     # Check for cps (cents per share) before stripping
     is_cps = "cps" in text.lower()
     # Remove currency prefix and cps suffix
-    text = re.sub(r'^[R\s]+|^ZAR\s*|^GBP\s*', '', text.strip())
+    text = re.sub(r'^[R\s]+|^ZAR\s*|^GBP\s*|^EUR\s*|^€\s*', '', text.strip())
     text = re.sub(r'\s*cps.*$', '', text, flags=re.IGNORECASE).strip()
     # If there's a decimal point, preserve it; remove all other non-digit chars
     if '.' in text:
@@ -444,9 +444,18 @@ def detect_exchange(text: str) -> str:
     if re.search(r'share\s+code\s+on\s+lse', lower):
         if re.search(r'(?:GBP|£)\s*[\d,.]', text):
             return "LSE"
-    # EUR currency with no explicit JSE mention → likely Euronext Amsterdam
-    if re.search(r'(?:EUR|€)\s*[\d,.]', text) and 'jse' not in lower:
-        return "AMS"
+    # EUR currency → likely Euronext Amsterdam, unless "Place of transaction" explicitly says JSE
+    if re.search(r'(?:EUR|€)\s*[\d,.]', text):
+        # Check if Place of transaction explicitly mentions JSE/Johannesburg
+        place_match = re.search(r'place\s+of\s+(?:the\s+)?transaction\s*[:\-]?\s*(.+?)(?:\n|$)', text, re.IGNORECASE)
+        if place_match:
+            place_text = place_match.group(1).lower()
+            if 'jse' not in place_text and 'johannesburg' not in place_text:
+                return "AMS"
+        elif 'euronext' in lower or 'amsterdam' in lower:
+            return "AMS"
+        else:
+            return "AMS"
     return "JSE"
 
 
