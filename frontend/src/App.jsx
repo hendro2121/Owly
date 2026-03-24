@@ -259,6 +259,8 @@ function Dash({go,setTicker}){
   },[period]);
 
   const fd=useMemo(()=>allDeals.filter(t=>{
+    // Filter out non-SA tickers (Brazilian B3 junk safety net)
+    if(t.ticker&&(/^\d/.test(t.ticker)||(/\d$/.test(t.ticker)&&t.ticker.length>=4)))return false;
     if(tf!=="All"&&t.transaction_type!==tf)return false;
     if(q){const s=q.toLowerCase();if(![t.company,t.ticker,t.director].some(x=>(x||"").toLowerCase().includes(s)))return false}
     if(t.value<mv)return false;
@@ -327,7 +329,7 @@ function Dash({go,setTicker}){
               {fd.map((d,i)=>(
                 <div key={d.id||i} onClick={()=>{setTicker(d.ticker);go("company")}} style={{display:"grid",gridTemplateColumns:"72px 1.4fr 1.2fr 68px 90px 90px 90px",padding:"13px 0",borderBottom:"1px solid var(--g100)",fontSize:13.5,cursor:"pointer",transition:"background .1s"}} onMouseEnter={e=>e.currentTarget.style.background="var(--g50)"} onMouseLeave={e=>e.currentTarget.style.background="transparent"}>
                   <div style={{fontFamily:"var(--mono)",fontSize:12,color:"var(--g400)"}}>{fmt.d(d.transaction_date)}</div>
-                  <div><span style={{fontWeight:700,fontFamily:"var(--mono)",fontSize:13}}>{d.ticker}</span>{d.exchange&&d.exchange!=="JSE"&&<span style={{marginLeft:4,fontSize:9,fontFamily:"var(--mono)",padding:"1px 5px",borderRadius:3,background:"var(--g100)",color:"var(--g500)"}}>{d.exchange}</span>}<span style={{color:"var(--g400)",marginLeft:8}}>{d.company}</span></div>
+                  <div><span style={{fontWeight:700,fontFamily:"var(--mono)",fontSize:13}}>{d.ticker}</span>{d.exchange&&d.exchange!=="JSE"&&<span style={{marginLeft:4,fontSize:9,fontFamily:"var(--mono)",padding:"2px 6px",borderRadius:4,background:d.exchange==="LSE"?"#EFF6FF":d.exchange==="AMS"?"#FDF4FF":"var(--g100)",color:d.exchange==="LSE"?"#3B82F6":d.exchange==="AMS"?"#A855F7":"var(--g500)",fontWeight:600}}>{d.exchange}</span>}<span style={{color:"var(--g400)",marginLeft:8}}>{d.company}</span></div>
                   <div><span style={{color:"var(--g600)"}}>{d.director}</span><span style={{color:"var(--g300)",marginLeft:6,fontSize:10.5,fontFamily:"var(--mono)"}}>{d.role}</span></div>
                   <div><Tag type={d.transaction_type}/></div>
                   <div style={{textAlign:"right",fontFamily:"var(--mono)",fontSize:12,color:"var(--g500)"}}>{fmt.num(d.shares)}</div>

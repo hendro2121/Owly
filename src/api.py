@@ -516,6 +516,8 @@ async def refresh_endpoint(
                     cur.execute("DELETE FROM director_deals WHERE ticker ~ '[0-9]$' AND length(ticker) >= 4")
                     cur.execute("DELETE FROM companies WHERE market = 'B3'")
                     cur.execute("DELETE FROM companies WHERE ticker ~ '^[0-9]' OR (ticker ~ '[0-9]$' AND length(ticker) >= 4)")
+                    # Delete Moneyweb raw_announcements (paywalled, no useful text)
+                    cur.execute("DELETE FROM raw_announcements WHERE url LIKE '%%moneyweb.co.za%%'")
                 conn.commit()
                 logger.info("Cleaned up bad director name records and bogus tickers")
 
@@ -639,6 +641,8 @@ async def cleanup_bad_directors(
             # Also delete from raw_announcements to prevent re-ingestion
             cur.execute("DELETE FROM raw_announcements WHERE ticker ~ '^[0-9]' OR (ticker ~ '[0-9]$' AND length(ticker) >= 4)")
             cur.execute("DELETE FROM raw_announcements WHERE source = 'B3'")
+            # Delete Moneyweb raw_announcements (paywalled, no useful text)
+            cur.execute("DELETE FROM raw_announcements WHERE url LIKE '%%moneyweb.co.za%%'")
         conn.commit()
 
     return {"status": "done", "deals_deleted": total_deleted}
