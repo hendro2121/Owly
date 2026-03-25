@@ -761,6 +761,27 @@ class RegexParser:
 
             role = self._extract(block, "role") or self._extract(text, "role") or "Director"
 
+            # If role is just "PDMR", try to find a better title from the announcement
+            if role.strip().upper() == "PDMR":
+                # Check announcement title/text for specific titles
+                title_match = re.search(
+                    r'(?:by\s+(?:a\s+)?)(prescribed\s+officer|executive\s+director|non[- ]executive\s+director|'
+                    r'chief\s+executive|chief\s+financial|chairman|ceo|cfo)',
+                    text, re.IGNORECASE
+                )
+                if title_match:
+                    role = title_match.group(1).strip().title()
+                else:
+                    # Check for "Prescribed Officer : Name" pattern — the label IS the role
+                    label_match = re.search(
+                        r'(Prescribed\s+Officer|Executive\s+Director|Non[- ]Executive\s+Director)\s*[:\-]\s*' + re.escape(director),
+                        text, re.IGNORECASE
+                    )
+                    if label_match:
+                        role = label_match.group(1).strip().title()
+                    else:
+                        role = "Director"  # Default instead of unhelpful "PDMR"
+
             # Check for multiple transactions within this director's block
             tx_blocks = self._split_transactions(block)
 
@@ -791,6 +812,13 @@ class RegexParser:
                 director = clean_director_name(director)
             if director:
                 role = self._extract(text, "role") or "Director"
+                if role.strip().upper() == "PDMR":
+                    title_match = re.search(
+                        r'(?:by\s+(?:a\s+)?)(prescribed\s+officer|executive\s+director|non[- ]executive\s+director|'
+                        r'chief\s+executive|chief\s+financial|chairman|ceo|cfo)',
+                        text, re.IGNORECASE
+                    )
+                    role = title_match.group(1).strip().title() if title_match else "Director"
                 deal = self._make_deal(
                     text, director, role,
                     common_date, common_type_raw, common_class,
