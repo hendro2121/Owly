@@ -77,11 +77,14 @@ class RawAnnouncement:
 DEALING_KEYWORDS = [
     "dealing in",
     "dealings in",
+    "dealing by",
+    "dealings by",
     "director dealing",
     "directors' dealings",
     "director's dealing",
     "pdmr notification",
     "pdmr dealing",
+    "notification and public disclosure of transactions by persons discharging",
 ]
 
 # Announcements matching these keywords should be excluded — they're corporate

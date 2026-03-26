@@ -241,8 +241,8 @@ def run_pipeline(output_format="json"):
         # Parse deals from the announcement text
         deals = parser.parse(ann.full_text, ticker=ticker, company=company)
 
-        # Only keep actual buys and sells
-        deals = [d for d in deals if d.transaction_type in ("Buy", "Sell")]
+        # Keep all valid transaction types
+        deals = [d for d in deals if d.transaction_type in ("Buy", "Sell", "Vesting", "TaxSale", "OptionsExercise", "HedgeSettlement")]
 
         batch_deals = []
         for deal in deals:
