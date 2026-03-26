@@ -4,7 +4,7 @@ import api from "./api";
 const curSymbol=(c)=>({GBP:"£",USD:"$",EUR:"€",ZAR:"R"}[c]||"R");
 const isAcquisition=(t)=>["Buy","Vesting","OptionsExercise"].includes(t);
 const dealColor=(t)=>isAcquisition(t)?"var(--gn)":"var(--rd)";
-const fmtCur=(v,market,currency)=>{const p=currency?curSymbol(currency):"R";if(!v)return p+"0";if(v>=1e9)return p+(v/1e9).toFixed(1)+"bn";if(v>=1e6)return p+(v/1e6).toFixed(1)+"m";if(v>=1e3)return p+(v/1e3).toFixed(0)+"k";return p+Math.round(v)};
+const fmtCur=(v,market,currency)=>{const p=currency?curSymbol(currency):"R";if(!v)return p+"0";const a=Math.abs(v),sign=v<0?"-":"";if(a>=1e9)return sign+p+(a/1e9).toFixed(1)+"bn";if(a>=1e6)return sign+p+(a/1e6).toFixed(1)+"m";if(a>=1e3)return sign+p+(a/1e3).toFixed(0)+"k";return sign+p+Math.round(a)};
 const fmt={zar:v=>fmtCur(v,"JSE"),num:n=>(n||0).toLocaleString("en-ZA"),d:d=>d?new Date(d).toLocaleDateString("en-ZA",{day:"numeric",month:"short",year:"numeric"}):"",full:d=>d?new Date(d).toLocaleDateString("en-ZA",{day:"numeric",month:"long",year:"numeric"}):""};
 
 // Geometric Raven Logo SVG
