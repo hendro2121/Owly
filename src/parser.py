@@ -161,8 +161,8 @@ PATTERNS = {
         r"(?:(?:Total\s+)?[Vv]alue\s+of\s+(?:the\s+)?transactions?(?:\s+\d+(?=\s*[:\-]))?)\s*(?:\([^)]*\))?\s*[:\-]?\s*(?:R|ZAR|GBP|EUR|€|£)?\s*([\d\s,\.]+)",
         # "Aggregated information: Acquisition value of GBP7,478.40" (UK MAR)
         r"(?:Aggregated\s+information)\s*[:\-]?\s*\w+\s+value\s+of\s+(?:R|ZAR|GBP|EUR|€|£)?\s*([\d\s,\.]+)",
-        # "Deemed market value : R51,721,659.78"
-        r"(?:Deemed\s+market\s+value)\s*[:\-]?\s*(?:R|ZAR|GBP|EUR|€|£)?\s*([\d\s,\.]+)",
+        # "Deemed market value : R51,721,659.78" / "Deemed conditional value: R2,846,307.33" / "Deemed transaction value: R39,858,908.50"
+        r"(?:Deemed\s+(?:market|conditional|transaction)\s+value)\s*[:\-]?\s*(?:R|ZAR|GBP|EUR|€|£)?\s*([\d\s,\.]+)",
         # "Total rand value" / "Total cost"
         r"(?:Total\s+(?:rand\s+)?(?:value|cost))\s*[:\-]?\s*(?:R|ZAR|GBP|EUR|€|£)?\s*([\d\s,\.]+)",
     ],
@@ -492,8 +492,8 @@ def clean_director_name(name: str) -> str:
     name = re.sub(r',?\s+who\s+is\s+.*$', '', name, flags=re.IGNORECASE).strip()
     # Strip "is a beneficiary..." / "is the sole member..." trailing clauses
     name = re.sub(r',?\s+is\s+(?:a|the)\s+.*$', '', name, flags=re.IGNORECASE).strip()
-    # Remove parenthetical suffixes like (Pty) Ltd
-    name = re.sub(r'\s*\(.*?\)\s*$', '', name).strip()
+    # Remove parenthetical suffixes like (Pty) Ltd, but keep (via ...) for associate dealings
+    name = re.sub(r'\s*\((?!via\s).*?\)\s*$', '', name).strip()
     # Remove trailing comma
     name = re.sub(r',\s*$', '', name).strip()
     # If it still looks like a label/boilerplate, reject it
@@ -753,6 +753,25 @@ class RegexParser:
                         director = first_line
                 if not director:
                     continue  # Can't identify director, skip
+
+            # Check if this is an associate dealing — "Name of associate: Titan" means
+            # the entity did the trade but the linked director is elsewhere in the text
+            is_associate = bool(re.search(r'Name\s+of\s+associate\s*[:\-]', block, re.IGNORECASE))
+            if is_associate:
+                # Extract the parent directors from the full announcement header
+                # "Name of directors: Dr CH Wiese\n                   Adv JD Wiese"
+                dir_match = re.search(
+                    r'Name\s+of\s+directors?\s*[:\-]\s*(.+?)(?=\n\s*\n|\nRelationship|\nName\s+of\s+associate)',
+                    text, re.IGNORECASE | re.DOTALL
+                )
+                if dir_match:
+                    # Could be multi-line: "Dr CH Wiese\n                    Adv JD Wiese"
+                    raw_dirs = dir_match.group(1).strip()
+                    # Split on newlines, clean each
+                    dir_names = [d.strip() for d in raw_dirs.split('\n') if d.strip()]
+                    # Use first director, append associate entity name
+                    if dir_names:
+                        director = dir_names[0] + " (via " + director.strip() + ")"
 
             # Clean director name — remove PDMR labels, trailing junk
             director = clean_director_name(director)
