@@ -3,7 +3,8 @@ import api from "./api";
 
 const curSymbol=(c)=>({GBP:"£",USD:"$",EUR:"€",ZAR:"R"}[c]||"R");
 const isAcquisition=(t)=>["Buy","Vesting","OptionsExercise"].includes(t);
-const dealColor=(t)=>isAcquisition(t)?"var(--gn)":"var(--rd)";
+const isNonDiscretionary=(t)=>["Vesting","TaxSale","OptionsExercise","HedgeSettlement","Conversion","Transfer"].includes(t);
+const dealColor=(t)=>isNonDiscretionary(t)?"var(--g500)":isAcquisition(t)?"var(--gn)":"var(--rd)";
 const SensBtn=({id})=><button onClick={e=>{e.stopPropagation();window.open(`/api/sens-pdf/${id}`,"_blank")}} title="View SENS announcement" style={{background:"none",border:"1px solid var(--g200)",borderRadius:5,padding:"2px 6px",cursor:"pointer",fontSize:10,fontFamily:"var(--mono)",color:"var(--g400)",lineHeight:1,display:"inline-flex",alignItems:"center",gap:3}}><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>SENS</button>;
 const fmtCur=(v,market,currency)=>{const p=currency?curSymbol(currency):"R";if(!v)return p+"0";const a=Math.abs(v),sign=v<0?"-":"";if(a>=1e9)return sign+p+(a/1e9).toFixed(1)+"bn";if(a>=1e6)return sign+p+(a/1e6).toFixed(1)+"m";if(a>=1e3)return sign+p+(a/1e3).toFixed(0)+"k";return sign+p+Math.round(a)};
 const fmt={zar:v=>fmtCur(v,"JSE"),num:n=>(n||0).toLocaleString("en-ZA"),d:d=>d?new Date(d).toLocaleDateString("en-ZA",{day:"numeric",month:"short",year:"numeric"}):"",full:d=>d?new Date(d).toLocaleDateString("en-ZA",{day:"numeric",month:"long",year:"numeric"}):""};
@@ -35,7 +36,7 @@ body{background:var(--white);font-family:var(--f);color:var(--g900);-webkit-font
 .em{font-style:italic;color:var(--or)}
 `;
 
-const Tag=({type})=>{const b=type==="Buy";const nd=["Vesting","TaxSale","OptionsExercise","HedgeSettlement","Conversion"].includes(type);const label=type==="HedgeSettlement"?"Hedge":type==="OptionsExercise"?"Options":type==="TaxSale"?"Tax Sale":type;return<span style={{display:"inline-flex",alignItems:"center",gap:3,padding:"3px 9px",borderRadius:6,fontSize:11,fontWeight:600,fontFamily:"var(--mono)",background:nd?"var(--g100)":b?"var(--gn-bg)":"var(--rd-bg)",color:nd?"var(--g500)":b?"var(--gn)":"var(--rd)"}}>
+const Tag=({type})=>{const b=type==="Buy";const nd=["Vesting","TaxSale","OptionsExercise","HedgeSettlement","Conversion","Transfer"].includes(type);const label=type==="HedgeSettlement"?"Hedge":type==="OptionsExercise"?"Options":type==="TaxSale"?"Tax Sale":type;return<span style={{display:"inline-flex",alignItems:"center",gap:3,padding:"3px 9px",borderRadius:6,fontSize:11,fontWeight:600,fontFamily:"var(--mono)",background:nd?"var(--g100)":b?"var(--gn-bg)":"var(--rd-bg)",color:nd?"var(--g500)":b?"var(--gn)":"var(--rd)"}}>
   {!nd&&<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d={b?"M12 19V5M5 12l7-7 7 7":"M12 5v14M5 12l7 7 7-7"}/></svg>}
   {label}</span>};
 

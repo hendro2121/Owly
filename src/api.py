@@ -845,6 +845,22 @@ async def refresh_endpoint(
                     cur.execute("DELETE FROM raw_announcements WHERE url LIKE '%%moneyweb.co.za%%' AND length(full_text) < 200")
                     # Fix exchange for EUR-currency deals (NEPI Rockcastle → AMS)
                     cur.execute("UPDATE director_deals SET exchange = 'AMS' WHERE currency = 'EUR' AND exchange = 'JSE'")
+                    # Reclassify offsetting Buy/Sell pairs as Transfer (same director, same shares, same price, same source)
+                    cur.execute("""
+                        UPDATE director_deals SET transaction_type = 'Transfer'
+                        WHERE id IN (
+                            SELECT a.id FROM director_deals a
+                            JOIN director_deals b ON a.director = b.director
+                                AND a.source_url = b.source_url
+                                AND a.shares = b.shares
+                                AND a.price = b.price
+                                AND a.transaction_date = b.transaction_date
+                                AND a.id != b.id
+                                AND a.transaction_type IN ('Buy', 'Sell')
+                                AND b.transaction_type IN ('Buy', 'Sell')
+                                AND a.transaction_type != b.transaction_type
+                        )
+                    """)
                 conn.commit()
                 logger.info("Cleaned up bad director name records and bogus tickers")
 
