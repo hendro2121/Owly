@@ -4,6 +4,7 @@ import api from "./api";
 const curSymbol=(c)=>({GBP:"£",USD:"$",EUR:"€",ZAR:"R"}[c]||"R");
 const isAcquisition=(t)=>["Buy","Vesting","OptionsExercise"].includes(t);
 const dealColor=(t)=>isAcquisition(t)?"var(--gn)":"var(--rd)";
+const SensBtn=({id})=><button onClick={e=>{e.stopPropagation();window.open(`/api/sens-pdf/${id}`,"_blank")}} title="View SENS announcement" style={{background:"none",border:"1px solid var(--g200)",borderRadius:5,padding:"2px 6px",cursor:"pointer",fontSize:10,fontFamily:"var(--mono)",color:"var(--g400)",lineHeight:1,display:"inline-flex",alignItems:"center",gap:3}}><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>SENS</button>;
 const fmtCur=(v,market,currency)=>{const p=currency?curSymbol(currency):"R";if(!v)return p+"0";const a=Math.abs(v),sign=v<0?"-":"";if(a>=1e9)return sign+p+(a/1e9).toFixed(1)+"bn";if(a>=1e6)return sign+p+(a/1e6).toFixed(1)+"m";if(a>=1e3)return sign+p+(a/1e3).toFixed(0)+"k";return sign+p+Math.round(a)};
 const fmt={zar:v=>fmtCur(v,"JSE"),num:n=>(n||0).toLocaleString("en-ZA"),d:d=>d?new Date(d).toLocaleDateString("en-ZA",{day:"numeric",month:"short",year:"numeric"}):"",full:d=>d?new Date(d).toLocaleDateString("en-ZA",{day:"numeric",month:"long",year:"numeric"}):""};
 
@@ -330,12 +331,12 @@ function Dash({go,setTicker,user,isPro}){
             <div style={{padding:"40px 0",textAlign:"center",color:"var(--g400)",fontFamily:"var(--mono)",fontSize:13}}>No deals match your filters.</div>
           ) : (
           <div style={{borderTop:"2px solid var(--g900)"}}>
-            <div style={{display:"grid",gridTemplateColumns:"72px 1.4fr 1.2fr 68px 90px 90px 90px",padding:"10px 0",fontSize:10,fontFamily:"var(--mono)",fontWeight:500,color:"var(--g400)",textTransform:"uppercase",letterSpacing:".1em",borderBottom:"1px solid var(--g200)"}}>
-              <div>Date</div><div>Company</div><div>Director</div><div>Type</div><div style={{textAlign:"right"}}>Shares</div><div style={{textAlign:"right"}}>Price</div><div style={{textAlign:"right"}}>Value</div>
+            <div style={{display:"grid",gridTemplateColumns:"72px 1.4fr 1.2fr 68px 90px 90px 90px 48px",padding:"10px 0",fontSize:10,fontFamily:"var(--mono)",fontWeight:500,color:"var(--g400)",textTransform:"uppercase",letterSpacing:".1em",borderBottom:"1px solid var(--g200)"}}>
+              <div>Date</div><div>Company</div><div>Director</div><div>Type</div><div style={{textAlign:"right"}}>Shares</div><div style={{textAlign:"right"}}>Price</div><div style={{textAlign:"right"}}>Value</div><div></div>
             </div>
             <div style={{maxHeight:520,overflowY:"auto"}}>
               {fd.map((d,i)=>(
-                <div key={d.id||i} onClick={()=>{setTicker(d.ticker);go("company")}} style={{display:"grid",gridTemplateColumns:"72px 1.4fr 1.2fr 68px 90px 90px 90px",padding:"13px 0",borderBottom:"1px solid var(--g100)",fontSize:13.5,cursor:"pointer",transition:"background .1s"}} onMouseEnter={e=>e.currentTarget.style.background="var(--g50)"} onMouseLeave={e=>e.currentTarget.style.background="transparent"}>
+                <div key={d.id||i} onClick={()=>{setTicker(d.ticker);go("company")}} style={{display:"grid",gridTemplateColumns:"72px 1.4fr 1.2fr 68px 90px 90px 90px 48px",padding:"13px 0",borderBottom:"1px solid var(--g100)",fontSize:13.5,cursor:"pointer",transition:"background .1s",alignItems:"center"}} onMouseEnter={e=>e.currentTarget.style.background="var(--g50)"} onMouseLeave={e=>e.currentTarget.style.background="transparent"}>
                   <div style={{fontFamily:"var(--mono)",fontSize:12,color:"var(--g400)"}}>{fmt.d(d.transaction_date)}</div>
                   <div><span style={{fontWeight:700,fontFamily:"var(--mono)",fontSize:13}}>{d.ticker}</span>{d.exchange&&d.exchange!=="JSE"&&<span style={{marginLeft:4,fontSize:9,fontFamily:"var(--mono)",padding:"2px 6px",borderRadius:4,background:d.exchange==="LSE"?"#EFF6FF":d.exchange==="AMS"?"#FDF4FF":"var(--g100)",color:d.exchange==="LSE"?"#3B82F6":d.exchange==="AMS"?"#A855F7":"var(--g500)",fontWeight:600}}>{d.exchange}</span>}<span style={{color:"var(--g400)",marginLeft:8}}>{d.company}</span></div>
                   <div><span style={{color:"var(--g600)"}}>{d.director}</span><span style={{color:"var(--g300)",marginLeft:6,fontSize:10.5,fontFamily:"var(--mono)"}}>{d.role}</span></div>
@@ -343,6 +344,7 @@ function Dash({go,setTicker,user,isPro}){
                   <div style={{textAlign:"right",fontFamily:"var(--mono)",fontSize:12,color:"var(--g500)"}}>{fmt.num(d.shares)}</div>
                   <div style={{textAlign:"right",fontFamily:"var(--mono)",fontSize:12,color:"var(--g500)"}}>{d.price!=null?curSymbol(d.currency||"ZAR")+Number(d.price).toFixed(2):"—"}</div>
                   <div style={{textAlign:"right",fontFamily:"var(--mono)",fontSize:12,fontWeight:700,color:dealColor(d.transaction_type)}}>{dealCur(d.value,d)}</div>
+                  <div style={{textAlign:"center"}}>{d.source_url&&<SensBtn id={d.id}/>}</div>
                 </div>
               ))}
             </div>
@@ -485,7 +487,7 @@ function Company({ticker,go,user,isPro}){
         {deals.map((d,i)=>(
           <div key={d.id||i} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"14px 0",borderBottom:"1px solid var(--g100)"}}>
             <div style={{display:"flex",alignItems:"center",gap:14}}><Tag type={d.transaction_type}/><span style={{fontWeight:600}}>{d.director}</span><span style={{color:"var(--g400)",fontSize:11,fontFamily:"var(--mono)"}}>{d.role}</span></div>
-            <div style={{display:"flex",alignItems:"center",gap:20}}><span style={{fontFamily:"var(--mono)",fontSize:12,color:"var(--g400)"}}>{fmt.full(d.transaction_date)}</span><span style={{fontFamily:"var(--mono)",fontSize:12,color:"var(--g500)"}}>{fmt.num(d.shares)}{d.price!=null?" @ "+curSymbol(d.currency||"ZAR")+Number(d.price).toFixed(2):""}</span><span style={{fontFamily:"var(--mono)",fontSize:14,fontWeight:700,color:dealColor(d.transaction_type),minWidth:80,textAlign:"right"}}>{fmtCur(d.value,mkt,d.currency)}</span></div>
+            <div style={{display:"flex",alignItems:"center",gap:20}}><span style={{fontFamily:"var(--mono)",fontSize:12,color:"var(--g400)"}}>{fmt.full(d.transaction_date)}</span><span style={{fontFamily:"var(--mono)",fontSize:12,color:"var(--g500)"}}>{fmt.num(d.shares)}{d.price!=null?" @ "+curSymbol(d.currency||"ZAR")+Number(d.price).toFixed(2):""}</span><span style={{fontFamily:"var(--mono)",fontSize:14,fontWeight:700,color:dealColor(d.transaction_type),minWidth:80,textAlign:"right"}}>{fmtCur(d.value,mkt,d.currency)}</span>{d.source_url&&<SensBtn id={d.id}/>}</div>
           </div>
         ))}
       </div>
