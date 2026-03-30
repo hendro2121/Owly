@@ -161,6 +161,8 @@ PATTERNS = {
         r"(?:(?:Total\s+)?[Vv]alue\s+of\s+(?:the\s+)?transactions?(?:\s+\d+(?=\s*[:\-]))?)\s*(?:\([^)]*\))?\s*[:\-]?\s*(?:R|ZAR|GBP|EUR|€|£)?\s*([\d\s,\.]+)",
         # "Aggregated information: Acquisition value of GBP7,478.40" (UK MAR)
         r"(?:Aggregated\s+information)\s*[:\-]?\s*\w+\s+value\s+of\s+(?:R|ZAR|GBP|EUR|€|£)?\s*([\d\s,\.]+)",
+        # "Deemed transaction value: R nil (Conditional value of R2 846 307.33...)" — value is nil but conditional value in parens
+        r"(?:Deemed\s+(?:market|conditional|transaction)\s+value)\s*[:\-]?\s*R?\s*nil\s*\(.*?(?:R|ZAR)\s*([\d\s,\.]+)",
         # "Deemed market value : R51,721,659.78" / "Deemed conditional value: R2,846,307.33" / "Deemed transaction value: R39,858,908.50"
         r"(?:Deemed\s+(?:market|conditional|transaction)\s+value)\s*[:\-]?\s*(?:R|ZAR|GBP|EUR|€|£)?\s*([\d\s,\.]+)",
         # "Total rand value" / "Total cost"
