@@ -845,6 +845,34 @@ async def refresh_endpoint(
                     cur.execute("DELETE FROM raw_announcements WHERE url LIKE '%%moneyweb.co.za%%' AND length(full_text) < 200")
                     # Fix exchange for EUR-currency deals (NEPI Rockcastle → AMS)
                     cur.execute("UPDATE director_deals SET exchange = 'AMS' WHERE currency = 'EUR' AND exchange = 'JSE'")
+                    # Deduplicate: remove deals that duplicate an existing record
+                    # (same director, source_url, shares, price, date, type)
+                    cur.execute("""
+                        DELETE FROM director_deals WHERE id IN (
+                            SELECT a.id FROM director_deals a
+                            JOIN director_deals b ON a.director = b.director
+                                AND a.source_url = b.source_url
+                                AND a.shares = b.shares
+                                AND a.price = b.price
+                                AND a.transaction_date = b.transaction_date
+                                AND a.transaction_type = b.transaction_type
+                                AND a.id > b.id
+                        )
+                    """)
+                    # Also remove Buy/Sell duplicates of records already classified as Transfer
+                    cur.execute("""
+                        DELETE FROM director_deals WHERE id IN (
+                            SELECT a.id FROM director_deals a
+                            JOIN director_deals b ON a.director = b.director
+                                AND a.source_url = b.source_url
+                                AND a.shares = b.shares
+                                AND a.price = b.price
+                                AND a.transaction_date = b.transaction_date
+                                AND a.id != b.id
+                                AND a.transaction_type IN ('Buy', 'Sell')
+                                AND b.transaction_type = 'Transfer'
+                        )
+                    """)
                     # Reclassify offsetting Buy/Sell pairs as Transfer (same director, same shares, same price, same source)
                     cur.execute("""
                         UPDATE director_deals SET transaction_type = 'Transfer'
@@ -991,6 +1019,78 @@ async def cleanup_bad_directors(
         conn.commit()
 
     return {"status": "done", "deals_deleted": total_deleted}
+
+
+@app.api_route("/api/cleanup/dedup", methods=["GET", "POST"])
+async def cleanup_dedup(
+    secret: str = Query(..., description="CRON_SECRET to authorize"),
+    ticker: str = Query("", description="Optional ticker to limit dedup to"),
+):
+    """Remove duplicate deals and reclassify offsetting Buy/Sell pairs as Transfer."""
+    expected = os.environ.get("CRON_SECRET", "")
+    if not expected or secret != expected:
+        raise HTTPException(403, "Invalid secret")
+
+    with get_db() as conn:
+        with conn.cursor() as cur:
+            tc = " AND a.ticker = %s" if ticker else ""
+            params = (ticker.upper(),) if ticker else ()
+
+            # Remove exact duplicates (same director, source, shares, price, date, type — keep lowest ID)
+            cur.execute("""
+                DELETE FROM director_deals WHERE id IN (
+                    SELECT a.id FROM director_deals a
+                    JOIN director_deals b ON a.director = b.director
+                        AND a.source_url = b.source_url
+                        AND a.shares = b.shares
+                        AND a.price = b.price
+                        AND a.transaction_date = b.transaction_date
+                        AND a.transaction_type = b.transaction_type
+                        AND a.id > b.id
+                    WHERE 1=1""" + tc + ")", params)
+            dupes_deleted = cur.rowcount
+
+            # Remove Buy/Sell records that duplicate existing Transfer records
+            cur.execute("""
+                DELETE FROM director_deals WHERE id IN (
+                    SELECT a.id FROM director_deals a
+                    JOIN director_deals b ON a.director = b.director
+                        AND a.source_url = b.source_url
+                        AND a.shares = b.shares
+                        AND a.price = b.price
+                        AND a.transaction_date = b.transaction_date
+                        AND a.id != b.id
+                        AND a.transaction_type IN ('Buy', 'Sell')
+                        AND b.transaction_type = 'Transfer'
+                    WHERE 1=1""" + tc + ")", params)
+            transfer_dupes_deleted = cur.rowcount
+
+            # Reclassify offsetting Buy/Sell pairs as Transfer
+            cur.execute("""
+                UPDATE director_deals SET transaction_type = 'Transfer'
+                WHERE id IN (
+                    SELECT a.id FROM director_deals a
+                    JOIN director_deals b ON a.director = b.director
+                        AND a.source_url = b.source_url
+                        AND a.shares = b.shares
+                        AND a.price = b.price
+                        AND a.transaction_date = b.transaction_date
+                        AND a.id != b.id
+                        AND a.transaction_type IN ('Buy', 'Sell')
+                        AND b.transaction_type IN ('Buy', 'Sell')
+                        AND a.transaction_type != b.transaction_type
+                    WHERE 1=1""" + tc + ")", params)
+            reclassified = cur.rowcount
+
+        conn.commit()
+
+    return {
+        "status": "done",
+        "ticker": ticker or "all",
+        "exact_dupes_deleted": dupes_deleted,
+        "transfer_dupes_deleted": transfer_dupes_deleted,
+        "reclassified_as_transfer": reclassified,
+    }
 
 
 @app.api_route("/api/reparse", methods=["GET", "POST"])
