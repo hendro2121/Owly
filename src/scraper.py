@@ -93,6 +93,8 @@ EXCLUDE_KEYWORDS = [
     "share trust",
     "share incentive",
     "employee share",
+    "employee benefit trust",
+    "benefit trust",
     "share scheme trust",
     "share purchase trust",
     "major subsidiary",

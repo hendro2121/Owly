@@ -136,6 +136,28 @@ def store_raw(conn, announcements):
     return conn, stored
 
 
+# Dealer names matching these phrases are corporate vehicles (employee
+# benefit trusts, share schemes), not individual insiders — skip them.
+EXCLUDE_DEALER_PATTERNS = [
+    "benefit trust",
+    "share trust",
+    "employee trust",
+    "incentive trust",
+    "share scheme",
+    "share incentive",
+    "share purchase trust",
+    "employee share",
+]
+
+
+def _is_excluded_dealer(director: str) -> bool:
+    """True if the dealer is a trust/scheme rather than an individual insider."""
+    if not director:
+        return False
+    lower = director.lower()
+    return any(p in lower for p in EXCLUDE_DEALER_PATTERNS)
+
+
 def store_deals(conn, deals):
     """Store parsed deals, skipping duplicates. Returns (conn, stored_count)."""
     conn = get_or_reconnect(conn)
@@ -143,6 +165,10 @@ def store_deals(conn, deals):
     with conn.cursor() as cur:
         for deal in deals:
             try:
+                # Skip employee benefit trusts / share schemes — not real insiders
+                if _is_excluded_dealer(deal.get("director", "")):
+                    logger.info(f"Skipping trust/scheme dealer: {deal.get('director')}")
+                    continue
                 # Check for duplicate: same ticker+director+date+shares+type
                 cur.execute("""
                     SELECT id FROM director_deals
