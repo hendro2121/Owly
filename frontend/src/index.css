@@ -1,4 +1,5 @@
-@import url('https://fonts.googleapis.com/css2?family=DM+Sans:ital,wght@0,400;0,500;0,600;0,700;0,800;1,400;1,500;1,600;1,700;1,800&family=Azeret+Mono:wght@400;500;600&display=swap');
+@import url('https://api.fontshare.com/v2/css?f[]=satoshi@300,400,500,700,900&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap');
 
 @tailwind base;
 @tailwind components;
@@ -6,9 +7,23 @@
 
 @layer base {
   body {
-    @apply bg-white font-sans text-grey-900 antialiased;
+    @apply bg-paper font-sans text-grey-900 antialiased;
+    letter-spacing: -0.011em;
   }
   ::selection {
-    @apply bg-raven-orange-light text-raven-orange-dark;
+    @apply bg-lime-300 text-grey-900;
+  }
+}
+
+@layer utilities {
+  /* Ramp-style dotted grid texture */
+  .bg-dot-grid {
+    background-image: radial-gradient(circle, rgba(10, 10, 10, 0.07) 1px, transparent 1px);
+    background-size: 22px 22px;
+  }
+  /* Subtle radial fade so dots concentrate toward the edges, not the text */
+  .bg-dot-fade {
+    -webkit-mask-image: radial-gradient(ellipse 80% 70% at 50% 40%, transparent 30%, #000 100%);
+    mask-image: radial-gradient(ellipse 80% 70% at 50% 40%, transparent 30%, #000 100%);
   }
 }

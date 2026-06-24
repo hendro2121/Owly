@@ -56,6 +56,13 @@ async function authGet(path) {
   return data;
 }
 
+async function authDelete(path) {
+  const resp = await fetch(`${BASE}${path}`, { method: 'DELETE', headers: authHeaders() });
+  const data = await resp.json().catch(() => ({}));
+  if (!resp.ok) throw new Error(data.detail || `API error: ${resp.status}`);
+  return data;
+}
+
 // ── Endpoints ──────────────────────────────────────────────────
 
 export const api = {
@@ -110,6 +117,12 @@ export const api = {
   me: () => authGet('/auth/me'),
   logout: () => { setToken(null); },
   getToken,
+
+  // ── Watchlist ─────────────────────────────────────────────────
+  watchlist: () => authGet('/watchlist'),
+  addWatch: (ticker) => authPost('/watchlist', { ticker }),
+  removeWatch: (ticker) => authDelete(`/watchlist/${encodeURIComponent(ticker)}`),
+  watchlistDigest: (days = 30) => authGet(`/watchlist/digest?days=${days}`),
 
   // ── Stripe ────────────────────────────────────────────────────
   createCheckout: () => authPost('/stripe/create-checkout'),

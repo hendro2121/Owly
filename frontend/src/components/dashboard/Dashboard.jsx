@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { StatCard } from "@/components/shared/StatCard";
 import { Loader } from "@/components/shared/Loader";
+import { DashboardHeader } from "./DashboardHeader";
 import { FeedTab } from "./FeedTab";
 import { ClustersTab } from "./ClustersTab";
 import { SectorsTab } from "./SectorsTab";
@@ -11,34 +12,28 @@ import api from "@/api";
 
 export function Dashboard({ go, setTicker }) {
   const [allDeals, setAllDeals] = useState([]);
-  const [clusters, setClusters] = useState([]);
-  const [sectors, setSectors] = useState([]);
-  const [companies, setCompanies] = useState([]);
   const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(true);
   const [market] = useState(null);
 
+  // Only fetch what the default (Feed) view needs. Each tab lazy-loads its own
+  // data when opened, so the initial render isn't blocked on cluster/sector/
+  // company queries the user may never look at.
   useEffect(() => {
     setLoading(true);
     Promise.all([
       api.deals({ perPage: 200, market: market || undefined, excludeNonDiscretionary: false }).catch(() => ({ deals: [] })),
-      api.clusters(365, 2, market || undefined).catch(() => []),
-      api.sectors(365, market || undefined).catch(() => []),
       api.stats(365, market || undefined).catch(() => null),
-      api.companies(undefined, 365, market || undefined).catch(() => []),
-    ]).then(([d, c, s, st, co]) => {
+    ]).then(([d, st]) => {
       setAllDeals(d.deals || []);
-      setClusters(c);
-      setSectors(s);
       setStats(st);
-      setCompanies(co);
       setLoading(false);
     });
   }, [market]);
 
   const bv = stats ? stats.buy_value : allDeals.filter((d) => d.transaction_type === "Buy").reduce((s, d) => s + (d.value || 0), 0);
   const sv = stats ? stats.sell_value : allDeals.filter((d) => d.transaction_type === "Sell").reduce((s, d) => s + (d.value || 0), 0);
-  const clusterCount = stats ? stats.cluster_count : clusters.length;
+  const clusterCount = stats ? stats.cluster_count : 0;
   const cur = (v) => fmtCur(v, market || "JSE");
 
   const handleDealClick = (deal) => {
@@ -51,22 +46,34 @@ export function Dashboard({ go, setTicker }) {
     go("company");
   };
 
+  const header = (
+    <DashboardHeader
+      page="dashboard"
+      go={go}
+      title="Insider Trades"
+      subtitle="Track how directors and executives trade their own money. Open-market buys signal conviction; cluster activity is the strongest tell."
+    />
+  );
+
   if (loading) {
     return (
-      <div className="max-w-page mx-auto px-10 pb-16">
+      <div className="max-w-page mx-auto px-6 md:px-10 pb-16">
+        {header}
         <Loader />
       </div>
     );
   }
 
   return (
-    <div className="max-w-page mx-auto px-10 pb-16">
+    <div className="max-w-page mx-auto px-6 md:px-10 pb-16">
+      {header}
+
       {/* Stats row */}
-      <div className="grid grid-cols-4 gap-3 my-7 animate-rise">
-        <StatCard label="Net Insider Flow" value={cur(bv - sv)} color="text-buy" />
-        <StatCard label="Buy Volume" value={cur(bv)} color="text-buy" />
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-7 animate-rise">
+        <StatCard label="Net Insider Flow" value={cur(bv - sv)} color="text-grey-900" />
+        <StatCard label="Buy Volume" value={cur(bv)} color="text-grey-900" />
         <StatCard label="Sell Volume" value={cur(sv)} color="text-sell" />
-        <StatCard label="Cluster Signals" value={String(clusterCount)} color="text-raven-orange" />
+        <StatCard label="Cluster Signals" value={String(clusterCount)} color="text-grey-900" />
       </div>
 
       {/* Tabs */}
@@ -85,15 +92,15 @@ export function Dashboard({ go, setTicker }) {
         </TabsContent>
 
         <TabsContent value="clusters">
-          <ClustersTab clusters={clusters} market={market} onCompanyClick={handleCompanyClick} />
+          <ClustersTab market={market} onCompanyClick={handleCompanyClick} />
         </TabsContent>
 
         <TabsContent value="sectors">
-          <SectorsTab initialSectors={sectors} market={market} />
+          <SectorsTab market={market} />
         </TabsContent>
 
         <TabsContent value="companies">
-          <CompaniesTab initialCompanies={companies} market={market} onCompanyClick={handleCompanyClick} />
+          <CompaniesTab market={market} onCompanyClick={handleCompanyClick} />
         </TabsContent>
       </Tabs>
     </div>

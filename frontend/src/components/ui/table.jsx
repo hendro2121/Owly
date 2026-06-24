@@ -9,7 +9,7 @@ const Table = forwardRef(({ className, ...props }, ref) => (
 Table.displayName = "Table";
 
 const TableHeader = forwardRef(({ className, ...props }, ref) => (
-  <thead ref={ref} className={cn("border-b-2 border-grey-900", className)} {...props} />
+  <thead ref={ref} className={cn("border-b border-grey-200", className)} {...props} />
 ));
 TableHeader.displayName = "TableHeader";
 
@@ -21,7 +21,7 @@ TableBody.displayName = "TableBody";
 const TableRow = forwardRef(({ className, ...props }, ref) => (
   <tr
     ref={ref}
-    className={cn("border-b border-grey-100 transition-colors hover:bg-grey-50/50", className)}
+    className={cn("border-b border-grey-100 transition-colors hover:bg-grey-50", className)}
     {...props}
   />
 ));
@@ -31,7 +31,7 @@ const TableHead = forwardRef(({ className, ...props }, ref) => (
   <th
     ref={ref}
     className={cn(
-      "h-10 px-3 text-left align-middle text-[10px] font-mono font-medium text-grey-400 uppercase tracking-widest [&:has([role=checkbox])]:pr-0",
+      "h-10 px-3 text-left align-middle text-[10px] font-mono font-medium text-grey-400 uppercase tracking-widest",
       className
     )}
     {...props}
@@ -40,7 +40,7 @@ const TableHead = forwardRef(({ className, ...props }, ref) => (
 TableHead.displayName = "TableHead";
 
 const TableCell = forwardRef(({ className, ...props }, ref) => (
-  <td ref={ref} className={cn("px-3 py-3 align-middle [&:has([role=checkbox])]:pr-0", className)} {...props} />
+  <td ref={ref} className={cn("px-3 py-3.5 align-middle", className)} {...props} />
 ));
 TableCell.displayName = "TableCell";
 

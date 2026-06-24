@@ -6,7 +6,7 @@ export function StatCard({ label, value, color = "text-grey-900" }) {
       <div className="text-[10px] font-mono font-medium text-grey-400 uppercase tracking-widest mb-2">
         {label}
       </div>
-      <div className={`text-[28px] font-extrabold font-mono tracking-tight ${color}`}>
+      <div className={`text-[26px] font-bold font-mono tracking-tight leading-none ${color}`}>
         {value}
       </div>
     </Card>
