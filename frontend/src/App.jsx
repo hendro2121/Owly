@@ -2,9 +2,15 @@ import { useState, useEffect } from "react";
 import { Nav } from "@/components/layout/Nav";
 import { Landing } from "@/components/landing/Landing";
 import { Dashboard } from "@/components/dashboard/Dashboard";
+import { MovementsDashboard } from "@/components/dashboard/MovementsDashboard";
+import { SuperinvestorsDashboard } from "@/components/dashboard/SuperinvestorsDashboard";
+import { Insights } from "@/components/insights/Insights";
+import { Post } from "@/components/insights/Post";
+import { WatchlistPage } from "@/components/watchlist/WatchlistPage";
 import { CompanyPage } from "@/components/company/CompanyPage";
 import { PricingPage } from "@/components/pricing/PricingPage";
 import { AuthPage } from "@/components/auth/AuthPage";
+import { WatchlistProvider } from "@/lib/watchlist";
 import api from "./api";
 
 export default function App() {
@@ -41,17 +47,24 @@ export default function App() {
   };
 
   return (
-    <div className="min-h-screen bg-white">
-      <Nav page={page} go={setPage} user={user} onLogout={handleLogout} />
-      {page === "landing" && <Landing go={setPage} />}
-      {page === "dashboard" && (
-        <Dashboard go={setPage} setTicker={setTicker} user={user} isPro={isPro} />
-      )}
-      {page === "company" && ticker && (
-        <CompanyPage ticker={ticker} go={setPage} user={user} isPro={isPro} />
-      )}
-      {page === "pricing" && <PricingPage go={setPage} user={user} />}
-      {page === "login" && <AuthPage go={setPage} setUser={setUser} />}
-    </div>
+    <WatchlistProvider user={user} go={setPage}>
+      <div className="min-h-screen bg-white">
+        <Nav page={page} go={setPage} user={user} onLogout={handleLogout} />
+        {page === "landing" && <Landing go={setPage} />}
+        {page === "dashboard" && (
+          <Dashboard go={setPage} setTicker={setTicker} user={user} isPro={isPro} />
+        )}
+        {page === "movements" && <MovementsDashboard go={setPage} />}
+        {page === "superinvestors" && <SuperinvestorsDashboard go={setPage} />}
+        {page === "insights" && <Insights go={setPage} />}
+        {page === "post" && <Post go={setPage} />}
+        {page === "watchlist" && <WatchlistPage go={setPage} user={user} setTicker={setTicker} />}
+        {page === "company" && ticker && (
+          <CompanyPage ticker={ticker} go={setPage} user={user} isPro={isPro} />
+        )}
+        {page === "pricing" && <PricingPage go={setPage} user={user} />}
+        {page === "login" && <AuthPage go={setPage} setUser={setUser} />}
+      </div>
+    </WatchlistProvider>
   );
 }

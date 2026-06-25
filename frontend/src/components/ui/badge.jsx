@@ -6,14 +6,15 @@ const badgeVariants = cva(
   {
     variants: {
       variant: {
-        default: "bg-grey-100 text-grey-500",
-        buy: "bg-teal-50 text-teal-500",
+        default: "bg-grey-100 text-grey-600",
+        buy: "bg-lime-200 text-grey-900",
         sell: "bg-red-50 text-red-600",
-        teal: "bg-teal-50 text-teal-500",
+        lime: "bg-lime-200 text-grey-900",
+        teal: "bg-lime-200 text-grey-900",
         outline: "border border-grey-200 text-grey-500",
         lse: "bg-blue-50 text-blue-600",
         ams: "bg-purple-50 text-purple-600",
-        seafoam: "bg-teal-50 text-teal-500",
+        seafoam: "bg-lime-100 text-grey-900",
       },
     },
     defaultVariants: {

@@ -1,6 +1,19 @@
+import { useState, useEffect } from "react";
 import { fmtCur, fmt } from "@/lib/format";
+import { Loader } from "@/components/shared/Loader";
+import api from "@/api";
 
-export function ClustersTab({ clusters, market, onCompanyClick }) {
+export function ClustersTab({ market, onCompanyClick }) {
+  const [clusters, setClusters] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    setLoading(true);
+    api.clusters(365, 2, market || undefined)
+      .then((c) => { setClusters(c); setLoading(false); })
+      .catch(() => setLoading(false));
+  }, [market]);
+
   const cur = (v) => fmtCur(v, market || "JSE");
 
   return (
@@ -11,7 +24,9 @@ export function ClustersTab({ clusters, market, onCompanyClick }) {
         <strong className="text-grey-900">cluster buys</strong>.
       </p>
 
-      {clusters.length === 0 ? (
+      {loading ? (
+        <Loader />
+      ) : clusters.length === 0 ? (
         <div className="py-10 text-center font-mono text-sm text-grey-400">
           No cluster signals detected yet.
         </div>
@@ -30,7 +45,7 @@ export function ClustersTab({ clusters, market, onCompanyClick }) {
                   <span className="font-mono font-extrabold text-[22px]">{c.ticker}</span>
                   <span className="text-grey-400 ml-3 text-base">{c.company}</span>
                 </div>
-                <span className="px-3.5 py-1 rounded-lg bg-raven-orange-light font-mono text-xs font-bold text-raven-orange">
+                <span className="px-3.5 py-1 rounded-lg bg-lime-200 font-mono text-xs font-bold text-grey-900">
                   {c.insider_count} insiders buying
                 </span>
               </div>

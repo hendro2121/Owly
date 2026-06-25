@@ -1,0 +1,1115 @@
+<!doctype html>
+<html>
+
+<head>
+	<meta charset="utf-8">
+
+
+    <meta charset="UTF-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="keywords" content="Reunert, Reunert Limited, The Reunert group, Woodmead, Sandton, Johannesburg, South Africa" />
+<meta name="description" content="The Reunert group manages a portfolio of businesses in the fields of electrical engineering, information and communication technologies and applied electronics." />
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0" />    <script id="Cookiebot" src="https://consent.cookiebot.com/uc.js" data-cbid="f759ffde-1860-40c8-9576-e4b63cdf30fc" data-blockingmode="auto" type="text/javascript"></script>
+
+<!-- Google Tag Manager -->
+<script>(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
+new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
+j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
+'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
+})(window,document,'script','dataLayer','GTM-TRT7H4J2');</script>
+<!-- 16 May 2024 -->
+
+
+<meta charset="UTF-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="keywords" content="Reunert, Reunert Limited, The Reunert group, Woodmead, Sandton, Johannesburg, South Africa" />
+<meta name="description" content="The Reunert group manages a portfolio of businesses in the fields of electrical engineering, information and communication technologies and applied electronics." />
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0" /><link rel="shortcut icon" href="images/fav.ico" type="image/x-icon">
+<link rel="icon" href="images/fav.ico" type="image/x-icon">
+<link rel="shortcut icon" type="image/png" href="images/favicon.png" />
+
+<title>Reunert | Error</title>
+<script src="js/jquery-3.7.1.min.js"></script>
+<script src="js/gsap.min.js"></script>
+<script src="js/TextPlugin.min.js"></script>
+<script src="js/ScrollTrigger.min.js"></script>
+<script src="js/wow.min.js"></script>
+<script src="js/lity.js"></script>
+
+<!-- Styles -->
+<link type="text/css" rel="stylesheet" href="css/linear-full.css?v2.2.5" />
+<link type="text/css" rel="stylesheet" href="css/production.css?v2.5.5" /> 
+<link type="text/css" rel="stylesheet" href="css/font-awesome.css?v2.2.5" />
+<link href="css/bootstrap.min.css?v2.2.4" rel="stylesheet" type="text/css" />
+<!-- <link href="css/main.css" rel="stylesheet" type="text/css"> -->
+<link href="css/bootstrap.min.css.map" rel="stylesheet" type="text/css">
+<link type="text/css" rel="stylesheet" href="css/styles.css?v2.4.5">
+<link type="text/css" rel="stylesheet" href="css/frame.css?v2.3.5">
+<link type="text/css" rel="stylesheet" href="css/animate.css?v2.2.5">
+<link rel="stylesheet" type="text/css" media="screen" href="css/lity.css?v2.2.5" />
+<link rel="stylesheet" type="text/css" media="screen" href="css/lity-popup.css?v2.2.5" />
+
+<!-- google FONT -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@200..800&display=swap" rel="stylesheet">
+
+
+	<style>
+		.txt-404 {
+			font-size: 95px;
+			font-weight: 700;
+			margin-bottom: 0;
+			color: #0F1E41;
+		}
+		.div-footer-blue{
+			display: none;
+		}
+
+		.intro-med {
+    font-size: 20px;
+    font-weight: 500;
+    margin-bottom: 30px;
+    line-height: 1.4;
+    color: #0F1E41;
+}
+
+a{ color: #54DADF;
+    margin-right: 0;
+    margin-left: 4px;
+    font-weight: 500;
+	text-decoration: none;
+}
+
+
+ a:hover {
+    color: #1F4650;
+	font-weight: 700;
+    transform: scale(1.01);
+}
+	</style>
+
+</head>
+
+<body id="Contact">
+
+<style>
+.ticker-reunert
+{
+float:right;
+color:#fff;
+font-size:12px;
+}
+.ticker-reunert span
+{
+font-size:10px;
+}
+</style>
+
+
+<style>
+.esg-text-holder {min-height: 300px}	
+.investor-text-holder {min-height: 300px}	
+.nav-drop-down ul.links-list-reporting li::after {
+    right: -10px;
+}	
+	
+	
+	
+	
+.technical-submenu{position: relative}
+.technical-submenu-items {
+    display: none;
+    width: 93%;
+    height: auto;
+/*
+    position: absolute;
+    right: -72%;
+    top: -317%;
+*/
+    padding-left: 23px;
+    /* z-index: 9999; */
+    background: white;
+}
+
+/* .technical-submenu-items .dropdown-item {
+    
+    font-size: 16px;
+
+} */
+.technical-submenu:hover .technical-submenu-items{display: block; }
+.project-dropdown{min-height: 450px; }
+.activetech{display: none!important}
+@media screen and (max-width: 1385px){
+.technical-submenu-items {  top: -251%;}
+
+}
+@media screen and (max-width: 991px){
+	.technical-submenu-items{position: relative; right: 0; top: 0;; width: 100%}
+	.project-dropdown{min-height: auto; }
+	}
+</style>
+
+
+
+
+<style>
+    li.nav-item .activemenu {
+        color: #1F4659;
+        background-color: #000;
+    }
+
+    .scroll > .scroll-btn {
+    position: relative;
+    display: block;
+    background: #43a9ac;
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    text-align: center;
+    color: #fff;
+    cursor: pointer;
+}
+
+.scroll > .scroll-btn span {
+    display: block;
+    position: relative;
+    font-size: 25px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #fff;
+}
+
+.left-ani {
+    -webkit-transform: translateX(130px);
+    transform: translateX(130px);
+    -webkit-transition: 1s;
+    transition: 1.25s;
+}
+
+
+.scroll {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    z-index: 999;
+}
+
+.icon-arrow-up:before {
+    content: "\e941";
+}
+
+span.icon-arrow-up:before {
+    font-size: 20px;
+    font-family: 'icomoon';
+    position: relative;
+    transition: 0.6s ease-in-out;
+}
+
+    @media screen and (max-width: 991px) {
+        .loader-span {
+            display: none;
+        }
+
+    }
+</style>
+<nav class="navbar navbar-expand-lg">
+    <div class="container">
+        <button onclick="resetDropdowns()" class="navbar-toggler" type="button" data-bs-toggle="collapse"
+            data-bs-target="#navbarTogglerDemo03" aria-controls="navbarTogglerDemo03" aria-expanded="false"
+            aria-label="Toggle navigation">
+            <img src="images/navigation/hamburger.svg" class="nav-img" alt="">
+        </button>
+        <a class="navbar-brand" href="index.php"><img src="images/reunert-logo.svg" alt="" class="nav-logo"></a>
+
+        <a class="d-flex d-lg-none search-logo" type="submit" href="search-results.php"><img
+                src="images/navigation/search.svg" class="nav-img" alt=""></a>
+        <div class="collapse navbar-collapse" id="navbarTogglerDemo03">
+
+            <ul class="navbar-nav ms-8 me-auto mb-2 mb-lg-0">
+                <li class="nav-item">
+                    <a class="nav-link " aria-current="page"
+                        href="index.php">Home</a>
+                </li>
+
+               <li class="nav-item">
+                    <a class="nav-link down-drop " rel="about-us"
+                        href="overview.php">About us</a>
+                    <div class="nav-drop-down" id="about-us">
+                        <p class="sec-title">About us</p>
+                        <div class="row">
+                            <div class="col-lg-6">
+
+                                <p class="sec-summary">Reunert manages a portfolio of businesses in the fields of
+Electrical Engineering, Information Communication
+Technologies dICTe and Applied Electronics.</p>
+                                <ul class="links-list">
+                                    <li><a href="overview.php">Overview</a></li>
+                                    <li>
+                                        <a href="our-strategy.php">Group strategy</a>
+                                    </li>
+                                    <li>
+                                        <a href="our-history.php">Our history</a>
+                                    </li>
+                                    <li>
+                                        <a href="leadership.php">Leadership</a>
+                                    </li>
+<!--
+                                    <li>
+                                        <a href="leadership.php?tab=tab2">Directors</a>
+                                    </li>
+                                    <li>
+                                        <a href="leadership.php?tab=tab3">Executives</a>
+                                    </li>
+-->
+                                 
+									                                   
+									
+                                </ul>
+                            </div>
+                            <div class="col-lg-6 align-self-center">
+                                <div class="img-holder">
+                                    <img src="images/navigation/investor-centre.png" alt="" class="mw-100">
+
+                                </div>
+                            </div>
+                        </div>
+
+                    </div>
+                </li> 
+                <li class="nav-item">
+                    <a class="nav-link down-drop " rel="investor"
+                        href="electrical-engineering.php">Our operating segments</a>
+                    <div class="nav-drop-down" id="investor">
+                        <p class="sec-title">Our operating segments</p>
+                        <div class="row">
+                            <div class="col-lg-6">
+
+                                <p class="sec-summary">Reunert has three operating segments: Electrical Engineering, ICT and Applied Electronics. The segments are defined by their core competencies, technology, products and services, markets and customer segmentation. </p>
+                                <ul class="links-list">
+                                    <!-- <li class="d-block d-lg-none"><a href="overview-segments.php">Overview</a></li> -->
+                                    <li>
+                                        <a href="electrical-engineering.php">Electrical engineering</a>
+                                    </li>
+                                    <li>
+                                        <a href="ict.php">ICT</a>
+                                    </li>
+
+                                    <li>
+                                        <a href="applied-electronics.php">Applied electronics</a>
+                                    </li>
+
+                                   <!-- <li>
+                                        <a href="renewable-energy.php">Renewable energy</a>
+                                    </li>-->
+                                    <li>
+                                        <a href="links-to-our-business-sites.php">Links to our business sites</a>
+                                    </li>
+
+                                </ul>
+                            </div>
+                            <div class="col-lg-6 align-self-center">
+                                <div class="img-holder">
+                                    <img src="images/navigation/investor-centre.png" alt="" class="mw-100">
+
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link down-drop " rel="reporting"
+                        href="esg-overview.php">ESG</a>
+                    <div class="nav-drop-down" id="reporting">
+                        <p class="sec-title">ESG</p>
+                        <div class="row">
+                            <div class="col-lg-6">
+                            	<div class="esg-text-holder">
+
+                                <p class="sec-summary mb-1">Our ESG strategy focuses on addressing the Group's varied ESG risks and opportunities. Explore our ESG initiatives to learn how we are making a difference.</p>
+
+                                <ul class="links-list">
+                                    <li><a href="esg-overview.php">Overview</a></li>
+                                    <li>
+                                        <a href="environment.php">Environment</a>
+                                    </li>
+                                    <li>
+                                        <a href="social.php">Social</a>
+                                    </li>
+
+                                    <li>
+										<a href="governance.php">Governance</a>
+                                    </li>  
+
+                                    <!-- <li>
+                                        <a href="policies.php">Policies</a>
+                                    </li> -->
+
+                                    <li class="technical-submenu">
+                                        <a href="javascript:void(0)" class="dropdown-SubMenu" id="cdp-reports">Reports</a>
+										<div class="technical-submenu-items activetech" id="cdp-reports-sub">
+											 <div class="row no-gutters">
+												<div class="col-lg-12">
+													<ul class="links-list">
+														<li><a href="cdp-reports.php">Group CDP</a></li>
+														<li><a class="dropdown-item" href="sustainability-reports.php">Sustainability reports</a></li>
+														<li><a class="dropdown-item" href="supplementary-reports.php">Supplementary reports</a></li>
+													</ul>
+												 </div>
+											 </div>
+									   	</div>
+                                    </li>
+									
+<!--
+				 <div class="technical-submenu">
+					  <a>Technical Parameters <img src="images/nav-arrow.svg"></a>
+					 </div>									
+-->
+<!--									
+                                    <li>
+                                        <a href="supplementary-reports.php">Supplementary reports</a>
+                                    </li>
+-->
+
+                                    
+								                                   
+
+
+
+
+                                </ul>
+                            	</div>
+                            </div>
+                            <div class="col-lg-6 align-self-center">
+                                <div class="img-holder">
+                                    <img src="images/navigation/esg.png" alt="" class="mw-100">
+
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </li> 
+                <li class="nav-item">
+                    <a class="nav-link down-drop " rel="shareholder"
+                        href="investor-overview.php">Investor centre</a>
+                    <div class="nav-drop-down" id="shareholder">
+                        <p class="sec-title">Investor centre</p>
+                        <div class="row">
+                            <div class="col-lg-6">
+                          	  <div class="investor-text-holder">
+
+									<p class="sec-summary">Explore a comprehensive range of financial reports, strategic
+										outlooks, and the latest updates specifically curated for the Reunert Investment
+										Case. Delve into this information to uncover the full potential and value of
+										investing with us.</p>
+									<ul class="links-list">
+										<li><a href="investor-overview.php">Overview</a></li>
+										<li>
+											<a href="investment-case.php">Investment case</a>
+										</li>
+	<!--
+										<li>
+											<a href="reporting-and-results.php">Reporting and results</a>
+										</li>
+	-->
+
+
+										<li class="technical-submenu">
+											<a href="javascript:void(0)" class="dropdown-SubMenu" id="investor-dropdown">Reporting and results</a>
+											<div class="technical-submenu-items activetech" id="investor-dropdown-sub">
+												 <div class="row no-gutters">
+													<div class="col-lg-12">
+														<ul class="links-list links-list-reporting">
+															<li><a href="reporting-and-results.php">Reporting and results overview</a></li>
+															<li><a href="presentations.php">Presentations</a></li>
+														</ul>
+													 </div>	
+												 </div>
+											</div>
+										</li>									
+
+
+
+
+										<li class="technical-submenu">
+											<a href="javascript:void(0)" class="dropdown-SubMenu" id="investor-share-dropdown">Share price info</a>
+											<div class="technical-submenu-items activetech" id="investor-share-dropdown-sub">
+												 <div class="row no-gutters">
+													<div class="col-lg-12">
+														<ul class="links-list">
+															<li>
+																<a href="share-price.php">Share price</a>
+															</li>
+															<li>
+																<a href="dividends.php">Dividends</a>
+															</li>
+															<li>
+																<a href="investor-contacts.php">Investor contacts</a>
+															</li>														
+														</ul>
+													 </div>	
+												 </div>
+											</div>
+										</li>									
+
+
+
+
+										<li>
+											<a href="financial-calendar.php">Financial calendar</a>
+										</li>
+
+										<li>
+											<a href="agm-details.php">AGM details</a>
+										</li>
+
+									</ul>
+								</div>
+                            </div>
+                            <div class="col-lg-6">
+                                <div class="img-holder">
+                                    <img src="images/navigation/investor-centre.png" alt="" class="mw-100">
+
+                                </div>
+                            </div>
+                        </div>
+
+                    </div>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link down-drop " rel="esg"
+                        href="sens.php">Media centre</a>
+                    <div class="nav-drop-down" id="esg">
+                        <p class="sec-title">Media centre</p>
+                        <div class="row">
+                            <div class="col-lg-6">
+                                <p class="sec-summary">Stay updated with the latest news and announcements from Reunert.
+                                </p>
+                                <ul class="links-list">
+                                    <li><a href="sens.php">SENS</a></li>
+                                    <li>
+                                        <a href="media-release.php">Media releases </a>
+                                    </li>
+
+                                    <li>
+                                        <a href="register-for-alerts.php">Register for alerts</a>
+                                    </li>
+
+                                </ul>
+                            </div>
+                            <div class="col-lg-6 align-self-center">
+                                <div class="img-holder">
+                                    <img src="images/navigation/media-centre.png" alt="" class="mw-100">
+
+                                </div>
+                            </div>
+                        </div>
+
+                    </div>
+                </li>
+
+                 <li class="nav-item">
+                    <a class="nav-link  " rel="Vacancies"
+                        href="https://reunert.ci.hr/applicant/index.php" target="_blank">Vacancies</a>
+
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link  " rel="sens"
+                        href="contact-us.php">Contact us</a>
+
+                </li>
+
+                 
+
+            </ul>
+            <a class="d-none d-lg-flex search-logo" type="submit" href="search-results.php"><img
+                    src="images/navigation/search.svg" class="nav-img" alt=""></a>
+        </div>
+
+
+
+
+
+    </div>
+
+    <div class="loader-span"></div>
+</nav>
+
+<div class="scroll left-ani" style="transform: translateX(0px);">
+    <div class="scroll-btn">
+        <span class="icon-arrow-up"></span>
+    </div>
+</div>
+
+
+<script>
+	
+	console.log("I am running 11");
+    if (window.matchMedia("(min-width: 992px)").matches) {
+        // Code to execute when screen width is more than 991px
+        $(document).ready(function () {
+            $(window).on('scroll', function () {
+                var wintop = $(window).scrollTop(),
+                    docheight = $(document).height(),
+                    winheight = $(window).height();
+                var scrolltrigger = 0.95;
+
+                var percScrolled = parseInt((wintop / (docheight - winheight)) * 100);
+
+                $(".loader-span").css('width', percScrolled + "%");
+
+
+            });
+        })
+        // Add your logic here
+    } else {
+        // Code to execute when screen width is less than or equal to 991px
+        // console.log("Screen width is 991px or less");
+        // Add your logic here
+    }
+</script>
+
+
+
+
+<script>
+
+
+	
+	
+	
+		
+		
+</script>
+
+
+<div class="banner-main">
+        <img src="images/banners/page-banner.png" alt="" class="banner-img">
+        <div class="container">
+            <div class="main-heading">
+                <h1 class="font-w-light"><span class="font-w-bold">404</span>Error</h1>
+            </div>
+        </div>
+    </div>
+
+	<style>
+    .bread-links {
+        display: flex;
+        gap: 10px;
+        justify-content: end;
+        
+        color: #1F4650;
+    }
+    .bread-links  p{font-size: 16px;}
+
+    .bread-links a {
+        color: #1F4650;
+        text-decoration: none;
+        font-weight: 400;
+        transition: all .3s ease-in-out;
+        margin-right: 4px;
+    }
+
+    .bread-links a:last-of-type {
+        color: #54DADF;
+        margin-right: 0;
+        margin-left: 4px;
+        font-weight: 700;
+    }
+
+    .bread-links a:hover{
+        color: #54DADF;
+        transform: scale(1.01);
+    }
+
+    .bread-links a:last-of-type:hover {
+        color: #1F4650;
+    }
+
+    @media screen and (max-width:991px){
+        .bread-links {font-size: 14px;}
+    }
+</style>
+
+<div class="py-3">
+    <div class="container">
+        <div class="text-end bread-links">
+        <p class='mb-0'><a href='index.php'>Home </a> | <span>404</span> |<a  class='last-link'>Error </a></p> 
+        </div>
+    </div>
+
+</div>
+
+	<div class="container">
+		<div class="row">
+			<div class="col-lg-12">
+				<h1 class="txt-404 text-center">404</h1>
+
+				<p class="intro-med text-center mb-2">We can't find the page you're looking for.</p>
+				<p class="text-center">Here are a few links that may be helpful:</p>
+				<a href="index.php" class="d-block text-center">Home</a>
+				<!--<a href="about.php" class="d-block text-center">About Us</a>-->
+				<a href="electical-engineering.php" class="d-block text-center">Our operating segments</a>
+				<a href="investor-overview.php" class="d-block text-center">Investors centre</a>
+				<a href="sens.php" class="d-block text-center">Media centre</a>
+				<a href="contact-us.php" class="d-block text-center">Contact us</a>
+				<a href="search-results.php" class="d-block text-center  mb-5">Search</a>
+			</div>
+		</div>
+	</div>
+
+	<style>
+    .top-foot-bg {
+        background-color: #43A9AC;
+        padding: 30px 0;
+        margin-top: 50px;
+    }
+
+    .set-apart {
+        display: flex;
+        justify-content: space-between;
+        place-items: center;
+    }
+
+    a.controls {
+        text-decoration: none !important;
+        font-size: 18px;
+        font-weight: 400;
+        position: relative;
+        color: #1F4650;
+        display: flex;
+        place-items: center;
+        font-family: "Manrope", sans-serif;
+    }
+
+    a.controls::before {
+        transition: all .3s ease-in-out;
+    }
+
+    a.controls::before {
+        font-family: 'icomoon';
+        display: flex;
+        justify-content: center;
+        place-items: center;
+        position: absolute;
+        height: 28px;
+        width: 28px;
+        border-radius: 50%;
+        border: 1px solid #1F4650;
+        font-size: 14px;
+        font-weight: 900;
+        color: #1F4650;
+    }
+
+    a.controls.prev {
+        padding-left: 42px;
+    }
+
+    a.controls.next {
+        padding-right: 42px;
+    }
+
+    a.controls.prev:hover::before {
+        transform: translateX(-10px);
+    }
+
+    a.controls.next:hover::before {
+        transform: translateX(10px);
+    }
+
+    a.controls.prev::before {
+        left: 0;
+    }
+
+    a.controls.next::before {
+        right: 0;
+    }
+
+    a.controls i {
+        font-style: normal;
+    }
+
+    .bottom-foot-bg {
+        padding: 30px 0;
+        background-color: #0F1E41;
+    }
+
+    ul.footer-nav {
+        list-style: none;
+        display: flex;
+        gap: 20px;
+        padding-left: 0;
+        padding-bottom: 20px;
+        border-bottom: 1px solid #fff;
+        width: 100%;
+
+    }
+
+    ul.policy-docs {
+        list-style: none;
+        display: flex;
+        gap: 20px;
+        padding-left: 0;
+    }
+
+    ul.footer-nav li a,
+    ul.policy-docs li a {
+        text-decoration: none;
+        color: #fff;
+        white-space: nowrap;
+        text-wrap: nowrap;
+        transition: all .3s ease-in-out;
+    }
+
+    ul.footer-nav li a:hover,
+    ul.policy-docs li a:hover {
+        color: #43A9AC;
+    }
+
+
+    .bottom-socials {
+        display: flex;
+        justify-content: space-between;
+    }
+
+    .bottom-socials p {
+        color: #fff;
+    }
+
+    .social-icons {
+        display: flex;
+        gap: 8px;
+    }
+
+    @media screen and (max-width:1400px) {
+        .custom-breaks .col-lg-2 {
+            width: 100%;
+        }
+
+        .custom-breaks .col-lg-10 {
+            width: 100%;
+        }
+    }
+
+    @media screen and (max-width:1200px) {
+        .bottom-socials {
+            flex-direction: column-reverse;
+            gap: 10px;
+        }
+    }
+
+
+
+    @media screen and (max-width: 991px) {
+        ul.footer-nav {
+            margin-bottom: 0;
+        }
+
+        ul.footer-nav,
+        ul.policy-docs {
+            flex-direction: column;
+            border-bottom: none;
+            gap: 15px;
+        }
+
+        .bottom-socials {
+            justify-content: start;
+            gap: 15px;
+        }
+    }
+
+    @media screen and (max-width: 600px) {
+        a.controls i {
+            display: none;
+        }
+    }
+</style>
+
+<footer>
+    <div class="top-foot-bg">
+        <div class="container">
+            <div class="set-apart">
+                <a href=".php" class="controls prev icon-chevron-left"><i></i></a>
+                <a href=".php" class="controls next icon-chevron-right"><i></i></a>
+            </div>
+        </div>
+
+    </div>
+    <div class="bottom-foot-bg">
+
+        <div class="container">
+            <div class="row custom-breaks">
+                <div class="col-lg-2">
+                    <a href="index.php"><img src="images/reunert-logo.svg" class="mw-100 mb-3"
+                            alt="Logo footer"></a>
+                </div>
+                <div class="col-lg-10">
+
+                    <ul class="footer-nav">
+                        <li><a href="overview.php">About us</a></li>
+                        <li><a href="electical-engineering.php">Our operating segments</a></li>
+                        <li><a href="esg-overview.php">ESG</a></li>
+                        <li><a href="investor-overview.php">Investor centre</a></li>
+                        <li><a href="sens.php">Media centre</a></li>
+                        <li><a href="https://reunert.ci.hr/applicant/index.php" target="_blank">Vacancies</a></li>
+                        <li><a href="reunert-limited.php">Contact us</a></li>
+                       
+                    </ul>
+
+                    <div class="bottom-socials">
+                        <div>
+                            <p class="mb-0">Copyright&nbsp;&copy;&nbsp;2026&nbsp;Reunert. All rights reserved.</p>
+                            <p>Reunert Limited, registration number 1913/004355/06</p>
+                        </div>
+
+                        <ul class="policy-docs">
+                            <li><a href="sitemap.php">Sitemap</a></li>
+                            <!-- <li><a href="#" target="_blank">Privacy policy</a></li>
+                            <li><a href="#" target="_blank">Terms and conditions</a></li> -->
+                            <li><a href="code-of-ethics.php">Code of ethics </a></li>
+                            <li><a href="paia-manual.php">PAIA </a></li>
+                            <li><a href="disclaimer.php">Disclaimer </a></li>
+                             <li><a href="pdf/reunert-ltd-website-privacy-policy-dn.pdf" target="_blank">privacy policy</a></li>
+
+
+                        </ul>
+
+                        <div class="social-icons">
+                            <!-- <a href="#" target="_blank"><img src="images/footer/facebook.svg" alt=""></a> -->
+                            <a href="https://twitter.com/ReunertLtd" target="_blank"><img src="images/footer/x.svg"
+                                    alt=""></a>
+                            <!-- <a href="#" target="_blank"><img src="images/footer/youtube.svg" alt=""></a> -->
+                            <a href="https://www.linkedin.com/company/reunert/?originalSubdomain=za"
+                                target="_blank"><img src="images/footer/linkedIn.svg" alt=""></a>
+                            <!-- <a href="#" target="_blank"><img src="images/footer/instagram.svg" alt=""></a> -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+</footer>    <script src="js/bootsrap.min.js"></script>
+
+<script>
+    $(document).ready(function () {
+        $(window).on('scroll', function () {
+            if ($(this).scrollTop() >= 200) {
+                $('.navbar').addClass('fixed-scroll');
+                popTop();
+            } else if ($(this).scrollTop() == 0) {
+                $('.navbar').removeClass('fixed-scroll');
+            }
+        });
+    })
+
+
+    function popTop() {
+
+        $(window).on('scroll', function () {
+            if ($(this).scrollTop() >= 200) {
+                $('.left-ani').css({
+                    "transform": "translateX(0)"
+                });
+
+            } else {
+                $('.left-ani').css({
+                    "transform": "translateX(130px)"
+                });
+            }
+        })
+    }
+
+    function gotop() {
+        $('.scroll-btn').click(function () {
+            $("body,html").animate({
+                scrollTop: 0
+            }, 600);
+        });
+    }
+
+
+    $(document).ready(function() {
+        gotop();
+    });
+</script>
+
+
+<script>
+	
+//	$(document).on('click', '.dropdown-SubMenu', function (e) {
+//  e.stopPropagation();
+//});
+//	$('#cdp-reports').click(function () {	
+//		
+//				
+//
+//    });
+	
+	
+    const links = document.querySelectorAll('.down-drop');
+
+    const linkContents = document.querySelectorAll('.nav-drop-down')
+	var subDropDown = document.querySelectorAll('.dropdown-SubMenu');
+
+    console.log(subDropDown);
+
+    var currActive = '';
+    var mediaQuery = window.matchMedia('(max-width: 991px)');
+
+
+    // Check if the media query matches
+    if (mediaQuery.matches) {
+        // Mobile 
+	
+
+        subDropDown.forEach(subDrop => {
+            subDrop.href = 'javascript:void(0)';
+            subDrop.addEventListener('click',function(){
+			tempId = '#'+subDrop.id+'-sub';
+	 		$(tempId).toggleClass('activetech');
+		})
+        });
+		
+		
+		
+
+        links.forEach((link, index) => {
+            //remove the hrefs
+            link.href = 'javascript:void(0)';
+            link.addEventListener('click', () => {
+                if (currActive != link.rel) {
+                    let dropdown = document.getElementById(link.rel);
+                    linkContents.forEach(content => {
+                        content.classList.remove('active');
+                    });
+                    dropdown.classList.add('active');
+                    currActive = link.rel;
+                    dropdown.addEventListener('mouseleave', () => {
+                        dropdown.classList.remove('active');
+                        currActive = '';
+                    })
+
+                } else {
+                    linkContents.forEach(content => {
+                        content.classList.remove('active');
+                    });
+                    currActive = '';
+                }
+
+            })
+        });
+    } else {
+        // Desktop
+        links.forEach((link, index) => {
+            link.addEventListener('mouseover', () => {
+                if (currActive != link.rel) {
+                    let dropdown = document.getElementById(link.rel);
+                    linkContents.forEach(content => {
+                        content.classList.remove('active');
+                    });
+                    dropdown.classList.add('active');
+                    currActive = link.rel;
+                    dropdown.addEventListener('mouseleave', () => {
+                        dropdown.classList.remove('active');
+                        currActive = '';
+                    })
+
+                } else {
+                    linkContents.forEach(content => {
+                        content.classList.remove('active');
+                    });
+                    currActive = '';
+                }
+            })
+        });
+		
+        subDropDown.forEach(subDrop => {
+            subDrop.href = 'javascript:void(0)';
+            subDrop.addEventListener('click',function(){
+			tempId = '#'+subDrop.id+'-sub';
+	 		$(tempId).toggleClass('activetech');
+		})
+        });
+		
+//		subDropDown.addEventListener('mouseleave',function(){
+//	 $('#cdp-reports-sub').toggleClass('activetech');
+//		
+//		});
+		
+		
+		
+    }
+
+    mediaQuery.addListener(function (mediaQueryList) {
+        if (mediaQueryList.matches) {
+            // Mobile 
+            links.forEach((link, index) => {
+                link.addEventListener('click', () => {
+                    if (currActive != link.rel) {
+                        let dropdown = document.getElementById(link.rel);
+                        linkContents.forEach(content => {
+                            content.classList.remove('active');
+                        });
+                        dropdown.classList.add('active');
+                        currActive = link.rel;
+                        dropdown.addEventListener('mouseleave', () => {
+                            dropdown.classList.remove('active');
+                            currActive = '';
+                        })
+
+                    } else {
+                        linkContents.forEach(content => {
+                            content.classList.remove('active');
+                        });
+                        currActive = '';
+                    }
+
+                })
+            });
+        } else {
+            // Desktop
+            links.forEach((link, index) => {
+                link.addEventListener('mouseover', () => {
+                    if (currActive != link.rel) {
+                        let dropdown = document.getElementById(link.rel);
+                        linkContents.forEach(content => {
+                            content.classList.remove('active');
+                        });
+                        dropdown.classList.add('active');
+                        currActive = link.rel;
+                        dropdown.addEventListener('mouseleave', () => {
+                            dropdown.classList.remove('active');
+                            currActive = '';
+                        })
+
+                    } else {
+                        linkContents.forEach(content => {
+                            content.classList.remove('active');
+                        });
+                        currActive = '';
+                    }
+                })
+            });
+        }
+    });
+
+    function resetDropdowns() {
+        linkContents.forEach(content => {
+            content.classList.remove('active');
+        });
+    }
+	
+	
+			
+
+</script>
+
+</body>
+
+
+</html>

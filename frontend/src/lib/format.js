@@ -9,7 +9,7 @@ export const dealColor = (t) =>
   isNonDiscretionary(t) ? "text-grey-500" : isAcquisition(t) ? "text-buy" : "text-sell";
 
 export const dealColorHex = (t) =>
-  isNonDiscretionary(t) ? "#737373" : isAcquisition(t) ? "#0D4F4F" : "#DC2626";
+  isNonDiscretionary(t) ? "#737373" : isAcquisition(t) ? "#0A0A0A" : "#DC2626";
 
 export const fmtCur = (v, market, currency) => {
   const p = currency ? curSymbol(currency) : "R";

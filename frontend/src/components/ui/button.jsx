@@ -4,19 +4,20 @@ import { cva } from "class-variance-authority";
 import { cn } from "@/lib/utils";
 
 const buttonVariants = cva(
-  "inline-flex items-center justify-center whitespace-nowrap rounded-lg text-sm font-medium transition-all duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-400/40 focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 cursor-pointer",
+  "inline-flex items-center justify-center whitespace-nowrap rounded-full text-sm font-medium transition-all duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-lime-400 focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 cursor-pointer",
   {
     variants: {
       variant: {
-        default: "bg-grey-900 text-white hover:bg-grey-800",
+        default: "bg-grey-900 text-white hover:bg-grey-700",
+        lime: "bg-lime-400 text-grey-900 font-semibold shadow-[0_1px_2px_rgba(10,10,10,0.08)] hover:bg-lime-300 hover:-translate-y-0.5 hover:shadow-[0_6px_18px_rgba(188,212,0,0.55)] active:translate-y-0 active:scale-95",
         teal: "bg-teal-500 text-white hover:bg-teal-600",
-        outline: "border border-grey-200 bg-white text-grey-700 hover:bg-grey-50 hover:border-grey-300",
-        ghost: "text-grey-500 hover:bg-grey-100 hover:text-grey-700",
-        link: "text-teal-500 underline-offset-4 hover:underline",
-        buy: "border border-teal-200 bg-teal-50 text-teal-500 hover:bg-teal-100",
+        outline: "border border-grey-300 bg-white text-grey-900 hover:bg-grey-50 hover:border-grey-400",
+        ghost: "text-grey-500 hover:bg-grey-100 hover:text-grey-900",
+        link: "text-grey-900 underline-offset-4 hover:underline",
+        buy: "border border-lime-300 bg-lime-50 text-grey-900 hover:bg-lime-100",
         sell: "border border-sell/20 bg-sell-bg text-sell hover:bg-red-100",
         neutral: "border border-grey-200 bg-grey-50 text-grey-500 hover:bg-grey-100",
-        dark: "bg-grey-900 text-white hover:bg-grey-800",
+        dark: "bg-grey-900 text-white hover:bg-grey-700",
       },
       size: {
         default: "h-9 px-4 py-2",

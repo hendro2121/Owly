@@ -31,7 +31,7 @@ export function PricingPage({ go, user }) {
   const plans = [
     {
       name: "FREE",
-      price: "R0",
+      price: "$0",
       per: "forever",
       desc: "See what's happening on the JSE.",
       feats: ["Latest 10 director deals", "Basic search", "24-hour delay"],
@@ -41,8 +41,9 @@ export function PricingPage({ go, user }) {
     },
     {
       name: "PRO",
-      price: "R70",
+      price: "$10",
       per: "/month",
+      annual: "or $100/year — save $20",
       desc: "Full access for serious investors.",
       feats: [
         "All deals in real-time",
@@ -61,8 +62,8 @@ export function PricingPage({ go, user }) {
 
   return (
     <div className="max-w-[1060px] mx-auto px-10 pt-14 pb-18">
-      <h1 className="text-[52px] font-extrabold tracking-tighter uppercase text-center animate-rise">
-        SIMPLE <span className="italic text-raven-orange">PRICING</span>
+      <h1 className="text-[52px] font-extrabold tracking-tighter uppercase text-center animate-rise text-grey-900">
+        SIMPLE <span className="bg-lime-300 text-grey-900 px-3 rounded-md">PRICING</span>
       </h1>
       <p className="text-center text-grey-500 text-base mt-3 mb-12 animate-rise" style={{ animationDelay: ".05s" }}>
         Start free. Upgrade when Raven proves its value.
@@ -80,17 +81,24 @@ export function PricingPage({ go, user }) {
             style={{ animationDelay: `${0.1 + i * 0.06}s` }}
           >
             {p.pop && (
-              <Badge className="absolute top-4 right-4 bg-raven-orange text-white text-[11px] font-bold uppercase tracking-wide">
+              <Badge className="absolute top-4 right-4 bg-lime-400 text-grey-900 text-[11px] font-bold uppercase tracking-wide">
                 Popular
               </Badge>
             )}
 
             <div className="text-sm font-bold tracking-wide mb-2">{p.name}</div>
             <div className="mb-3">
-              <span className="text-[44px] font-extrabold tracking-tight">{p.price}</span>
-              <span className={`text-sm ml-1 ${p.dark ? "text-grey-500" : "text-grey-400"}`}>
-                {p.per}
-              </span>
+              <div>
+                <span className="text-[44px] font-extrabold tracking-tight">{p.price}</span>
+                <span className={`text-sm ml-1 ${p.dark ? "text-grey-500" : "text-grey-400"}`}>
+                  {p.per}
+                </span>
+              </div>
+              {p.annual && (
+                <span className="inline-block mt-2 rounded-full bg-lime-400 text-grey-900 text-[12px] font-semibold px-2.5 py-1">
+                  {p.annual}
+                </span>
+              )}
             </div>
             <div className={`text-sm mb-7 leading-relaxed ${p.dark ? "text-grey-500" : "text-grey-500"}`}>
               {p.desc}
@@ -104,7 +112,7 @@ export function PricingPage({ go, user }) {
                     p.dark ? "text-grey-300" : "text-grey-600"
                   }`}
                 >
-                  <Check className="h-4 w-4 text-raven-orange shrink-0" strokeWidth={2.5} />
+                  <Check className={`h-4 w-4 shrink-0 ${p.dark ? "text-lime-400" : "text-grey-900"}`} strokeWidth={2.5} />
                   {ft}
                 </div>
               ))}
@@ -113,7 +121,7 @@ export function PricingPage({ go, user }) {
             <Button
               onClick={p.action}
               disabled={loading}
-              variant={p.dark ? "default" : "outline"}
+              variant={p.dark ? "lime" : "outline"}
               className="w-full mt-7 h-11"
             >
               {loading ? "..." : p.btn}

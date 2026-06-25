@@ -13,6 +13,7 @@ from contextlib import contextmanager
 
 import psycopg2
 import psycopg2.extras
+import psycopg2.pool
 import jwt
 import bcrypt
 import stripe
@@ -36,16 +37,41 @@ DATABASE_URL = os.environ.get("DATABASE_URL", "")
 if DATABASE_URL.startswith("postgres://"):
     DATABASE_URL = DATABASE_URL.replace("postgres://", "postgresql://", 1)
 
+# Reuse DB connections across requests. Opening a fresh connection per request
+# means a TCP+TLS+auth handshake to the (cross-region) pooler every time, which
+# dominates latency for multi-call pages like the dashboard. A small pool keeps
+# warm connections ready.
+_DB_POOL = None
+
+def _db_pool():
+    global _DB_POOL
+    if _DB_POOL is None:
+        _DB_POOL = psycopg2.pool.ThreadedConnectionPool(1, 10, dsn=DATABASE_URL)
+    return _DB_POOL
+
 @contextmanager
 def get_db():
-    conn = psycopg2.connect(DATABASE_URL)
+    pool = _db_pool()
+    conn = pool.getconn()
+    broken = False
     try:
         yield conn
     except Exception:
-        conn.rollback()
+        try:
+            conn.rollback()
+        except Exception:
+            broken = True
         raise
     finally:
-        conn.close()
+        try:
+            if not broken and not conn.closed:
+                conn.rollback()  # clear any open read transaction before reuse
+            pool.putconn(conn, close=broken or conn.closed)
+        except Exception:
+            try:
+                pool.putconn(conn, close=True)
+            except Exception:
+                pass
 
 def query(conn, sql, params=None):
     with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
@@ -168,6 +194,8 @@ def ensure_db():
             cur.execute("UPDATE director_deals SET market = 'JSE' WHERE market IS NULL")
             cur.execute("CREATE INDEX IF NOT EXISTS idx_deals_market ON director_deals(market)")
             cur.execute("CREATE INDEX IF NOT EXISTS idx_companies_market ON companies(market)")
+            # Company website domain — used to fetch real logos (Logo.dev)
+            cur.execute("ALTER TABLE companies ADD COLUMN IF NOT EXISTS website TEXT")
             # Dual-listing support: currency and exchange columns
             cur.execute("""
                 DO $$ BEGIN
@@ -197,6 +225,20 @@ def ensure_db():
             """)
             cur.execute("CREATE INDEX IF NOT EXISTS idx_users_email ON users(email)")
             cur.execute("CREATE INDEX IF NOT EXISTS idx_users_stripe_cust ON users(stripe_customer_id)")
+            # Watchlist: tickers a user follows, for in-app tracking + monthly recaps
+            cur.execute("""
+                CREATE TABLE IF NOT EXISTS watchlist_items (
+                    id SERIAL PRIMARY KEY,
+                    user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+                    ticker TEXT NOT NULL,
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    UNIQUE(user_id, ticker))
+            """)
+            cur.execute("CREATE INDEX IF NOT EXISTS idx_watchlist_user ON watchlist_items(user_id)")
+            # Recap (digest email) preferences live on the user row
+            cur.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS recap_enabled BOOLEAN DEFAULT true")
+            cur.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS recap_frequency TEXT DEFAULT 'monthly'")
+            cur.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS last_recap_sent_at TIMESTAMP")
         conn.commit()
         logger.info("PostgreSQL tables ready")
 
@@ -245,6 +287,7 @@ class CompanyInfo(BaseModel):
     status: Optional[str]="listed"
     last_scraped: Optional[str]=None; deal_count: Optional[int]=0
     market: Optional[str]="JSE"
+    website: Optional[str]=None
 
 def row_to_deal(r: dict) -> DealResponse:
     d = dict(r)
@@ -257,17 +300,20 @@ def row_to_deal(r: dict) -> DealResponse:
 # ─── Startup ─────────────────────────────────────────────────────────────────
 
 def _start_daily_scraper():
-    """Background thread that scrapes Sharenet at 12:00 and 17:00 SAST on weekdays."""
+    """Background thread that scrapes Sharenet at 10:00, 13:00 and 17:30 SAST on weekdays."""
     import time
     from datetime import datetime, timezone, timedelta
 
     SAST = timezone(timedelta(hours=2))
-    logger.info("Daily scraper scheduler started")
+    # (hour, minute) in SAST — kept in sync with the host crontab
+    scrape_times = [(10, 0), (13, 0), (17, 30)]
+    logger.info("Daily scraper scheduler started (10:00, 13:00, 17:30 SAST, weekdays)")
 
     while True:
         now = datetime.now(SAST)
-        # Only run on weekdays (Mon=0 to Fri=4)
-        if now.weekday() < 5 and now.hour in (12, 17) and now.minute < 5:
+        # Fire within a 5-minute window of each scheduled time, weekdays only (Mon=0..Fri=4)
+        due = now.weekday() < 5 and any(now.hour == h and m <= now.minute < m + 5 for h, m in scrape_times)
+        if due:
             logger.info(f"Scheduled scrape triggered at {now.strftime('%H:%M SAST')}")
             try:
                 from pipeline import run_pipeline
@@ -388,9 +434,21 @@ async def get_clusters(days: int=Query(30,ge=7,le=365), min_insiders: int=Query(
             GROUP BY d.ticker, d.company, c.sector HAVING COUNT(DISTINCT d.director)>=%s
             ORDER BY SUM(d.value) DESC
         """, params)
+        # Fetch every contributing director for all qualifying tickers in ONE query
+        # (was a per-cluster query — an N+1 round trip to the DB for each cluster).
+        tickers = [r["ticker"] for r in raw]
+        dirs_by_ticker = {}
+        if tickers:
+            all_dirs = query(conn,
+                "SELECT ticker,director,role,shares,price,value,transaction_date FROM director_deals "
+                "WHERE ticker = ANY(%s) AND transaction_type='Buy' AND transaction_date>=%s ORDER BY value DESC",
+                (tickers, cutoff))
+            for d in all_dirs:
+                dirs_by_ticker.setdefault(d["ticker"], []).append(d)
+
         clusters = []
         for r in raw:
-            dirs = query(conn, "SELECT director,role,shares,price,value,transaction_date FROM director_deals WHERE ticker=%s AND transaction_type='Buy' AND transaction_date>=%s ORDER BY value DESC", (r["ticker"], cutoff))
+            dirs = dirs_by_ticker.get(r["ticker"], [])
             clusters.append(ClusterSignal(
                 ticker=r["ticker"], company=r["company"], sector=r["sector"],
                 insider_count=r["cnt"], total_value=float(r["tv"] or 0),
@@ -599,7 +657,7 @@ async def get_companies(sector: Optional[str]=None, include_delisted: bool=False
             cutoff = (datetime.now()-timedelta(days=days)).strftime("%Y-%m-%d")
             deal_filter = " AND d.transaction_date >= %s"
             params.append(cutoff)
-        sql = f"SELECT c.ticker,c.name,c.sector,c.status,c.last_scraped,c.market,COUNT(CASE WHEN d.id IS NOT NULL{deal_filter} THEN 1 END) as deal_count FROM companies c LEFT JOIN director_deals d ON c.ticker=d.ticker"
+        sql = f"SELECT c.ticker,c.name,c.sector,c.status,c.last_scraped,c.market,c.website,COUNT(CASE WHEN d.id IS NOT NULL{deal_filter} THEN 1 END) as deal_count FROM companies c LEFT JOIN director_deals d ON c.ticker=d.ticker"
         conds = []
         if market:
             conds.append("c.market=%s"); params.append(market.upper())
@@ -609,12 +667,12 @@ async def get_companies(sector: Optional[str]=None, include_delisted: bool=False
             conds.append("COALESCE(c.status, 'listed') != 'delisted'")
         if conds:
             sql += " WHERE " + " AND ".join(conds)
-        sql += " GROUP BY c.ticker,c.name,c.sector,c.status,c.last_scraped,c.market ORDER BY c.name"
+        sql += " GROUP BY c.ticker,c.name,c.sector,c.status,c.last_scraped,c.market,c.website ORDER BY c.name"
         rows = query(conn, sql, params)
         return [CompanyInfo(ticker=r["ticker"],name=r["name"],sector=r["sector"],
             status=r.get("status", "listed"),
             last_scraped=r["last_scraped"].isoformat() if r["last_scraped"] else None,
-            deal_count=r["deal_count"],market=r.get("market","JSE")) for r in rows]
+            deal_count=r["deal_count"],market=r.get("market","JSE"),website=r.get("website")) for r in rows]
 
 # ─── Auth ─────────────────────────────────────────────────────────────────────
 
@@ -678,6 +736,93 @@ async def login(req: AuthRequest):
 async def get_me(authorization: str = Header(None)):
     user = get_current_user(authorization)
     return UserResponse(email=user["email"], subscription_status=user["subscription_status"] or "free")
+
+
+# ─── Watchlist ───────────────────────────────────────────────────────────────
+
+class WatchlistAddRequest(BaseModel):
+    ticker: str
+
+
+@app.get("/api/watchlist")
+async def get_watchlist(authorization: str = Header(None)):
+    """Return the authenticated user's watched tickers, with company info."""
+    user = get_current_user(authorization)
+    with get_db() as conn:
+        rows = query(conn, """
+            SELECT w.ticker, w.created_at, c.name, c.sector, c.market, c.website,
+                   (SELECT COUNT(*) FROM director_deals d WHERE d.ticker = w.ticker) AS deal_count
+            FROM watchlist_items w
+            LEFT JOIN companies c ON c.ticker = w.ticker
+            WHERE w.user_id = %s
+            ORDER BY w.created_at DESC
+        """, (user["id"],))
+    items = []
+    for r in rows:
+        d = dict(r)
+        if d.get("created_at") and hasattr(d["created_at"], "isoformat"):
+            d["created_at"] = d["created_at"].isoformat()
+        items.append(d)
+    return {"tickers": [r["ticker"] for r in items], "items": items}
+
+
+@app.post("/api/watchlist")
+async def add_watchlist(req: WatchlistAddRequest, authorization: str = Header(None)):
+    """Add a ticker to the user's watchlist (idempotent)."""
+    user = get_current_user(authorization)
+    ticker = (req.ticker or "").strip().upper()
+    if not ticker:
+        raise HTTPException(400, "Ticker required")
+    with get_db() as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                "INSERT INTO watchlist_items (user_id, ticker) VALUES (%s, %s) "
+                "ON CONFLICT (user_id, ticker) DO NOTHING",
+                (user["id"], ticker),
+            )
+        conn.commit()
+    return {"ok": True, "ticker": ticker}
+
+
+@app.delete("/api/watchlist/{ticker}")
+async def remove_watchlist(ticker: str, authorization: str = Header(None)):
+    """Remove a ticker from the user's watchlist."""
+    user = get_current_user(authorization)
+    ticker = ticker.strip().upper()
+    with get_db() as conn:
+        with conn.cursor() as cur:
+            cur.execute("DELETE FROM watchlist_items WHERE user_id = %s AND ticker = %s", (user["id"], ticker))
+        conn.commit()
+    return {"ok": True, "ticker": ticker}
+
+
+@app.get("/api/watchlist/digest")
+async def watchlist_digest(days: int = 30, authorization: str = Header(None)):
+    """All disclosures for the user's watched tickers over the period.
+
+    Today this covers insider trades (director_deals). The management-movement
+    and superinvestor feeds get unioned in here once those tables exist — the
+    same payload powers the in-app watchlist view and the monthly recap email.
+    """
+    user = get_current_user(authorization)
+    with get_db() as conn:
+        tickers = [r["ticker"] for r in query(conn, "SELECT ticker FROM watchlist_items WHERE user_id = %s", (user["id"],))]
+        if not tickers:
+            return {"period_days": days, "tickers": [], "insider_trades": [], "counts": {"insider_trades": 0}}
+        cutoff = (datetime.utcnow() - timedelta(days=days)).date().isoformat()
+        rows = query(
+            conn,
+            "SELECT * FROM director_deals WHERE ticker = ANY(%s) AND transaction_date >= %s "
+            "ORDER BY transaction_date DESC NULLS LAST",
+            (tickers, cutoff),
+        )
+    deals = [row_to_deal(r) for r in rows]
+    return {
+        "period_days": days,
+        "tickers": tickers,
+        "insider_trades": deals,
+        "counts": {"insider_trades": len(deals)},
+    }
 
 
 # ─── Stripe ──────────────────────────────────────────────────────────────────

@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="32px" height="32px" viewBox="0 0 32 32" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+    <title>Favicon 32x32@2x</title>
+    <defs>
+        <linearGradient x1="-2.85566797%" y1="48.7513766%" x2="97.144332%" y2="48.7513766%" id="linearGradient-1">
+            <stop stop-color="#54DADF" offset="0%"></stop>
+            <stop stop-color="#EBF982" offset="100%"></stop>
+        </linearGradient>
+        <linearGradient x1="-3.91921882%" y1="48.6787168%" x2="96.0807812%" y2="48.6787168%" id="linearGradient-2">
+            <stop stop-color="#54DADF" offset="0%"></stop>
+            <stop stop-color="#EBF982" offset="100%"></stop>
+        </linearGradient>
+    </defs>
+    <g id="Favicon-32x32" stroke="none" stroke-width="1" fill="none" fill-rule="evenodd">
+        <g id="Group" transform="translate(1, 1)">
+            <path d="M0,0 L0,26.5561408 C0,28.4594206 1.54303185,30 3.44934158,30 L17.4193548,30 L17.4193548,25.4069907 L4.93122764,25.4069907 L4.93122764,0 L0,0 Z" id="Shape-1" fill="url(#linearGradient-1)"></path>
+            <path d="M13.5483871,0 L13.5483871,4.59245961 L24.994416,4.59245961 L24.994416,30 L30,30 L30,3.22441652 C30,1.44344704 28.5322795,0 26.7213608,0 L13.5483871,0 Z" id="Shape-2" fill="url(#linearGradient-2)"></path>
+        </g>
+    </g>
+</svg>
