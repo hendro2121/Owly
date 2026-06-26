@@ -46,7 +46,7 @@ export default {
         },
       },
       fontFamily: {
-        sans: ['Satoshi', 'Inter', 'system-ui', '-apple-system', 'sans-serif'],
+        sans: ['Inter', 'system-ui', '-apple-system', 'sans-serif'],
         mono: ['JetBrains Mono', 'ui-monospace', 'monospace'],
         display: ['Satoshi', 'Inter', 'system-ui', 'sans-serif'],
       },
