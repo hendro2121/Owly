@@ -48,7 +48,7 @@ export function Dashboard({ go, setTicker }) {
 
   const header = (
     <DashboardHeader
-      page="dashboard"
+      page="deals"
       go={go}
       title="Insider Trades"
       subtitle="Track how directors and executives trade their own money. Open-market buys signal conviction; cluster activity is the strongest tell."

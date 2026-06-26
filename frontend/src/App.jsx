@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { Nav } from "@/components/layout/Nav";
 import { Landing } from "@/components/landing/Landing";
 import { Dashboard } from "@/components/dashboard/Dashboard";
+import { Overview } from "@/components/dashboard/Overview";
 import { MovementsDashboard } from "@/components/dashboard/MovementsDashboard";
 import { SuperinvestorsDashboard } from "@/components/dashboard/SuperinvestorsDashboard";
 import { Insights } from "@/components/insights/Insights";
@@ -51,7 +52,8 @@ export default function App() {
       <div className="min-h-screen bg-white">
         <Nav page={page} go={setPage} user={user} onLogout={handleLogout} />
         {page === "landing" && <Landing go={setPage} />}
-        {page === "dashboard" && (
+        {page === "dashboard" && <Overview go={setPage} />}
+        {page === "deals" && (
           <Dashboard go={setPage} setTicker={setTicker} user={user} isPro={isPro} />
         )}
         {page === "movements" && <MovementsDashboard go={setPage} />}

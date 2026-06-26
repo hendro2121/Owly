@@ -18,7 +18,7 @@ export function Nav({ page, go, user, onLogout }) {
   }, []);
 
   const NAV_ITEMS = [
-    { label: "Dashboards", to: "dashboard", match: ["dashboard", "movements", "superinvestors", "company"] },
+    { label: "Dashboards", to: "dashboard", match: ["dashboard", "deals", "movements", "superinvestors", "company"] },
     { label: "Insights", to: "insights", match: ["insights", "post"] },
     ...(user ? [{ label: "Watchlist", to: "watchlist", match: ["watchlist"] }] : []),
     { label: "Pricing", to: "pricing", match: ["pricing"] },

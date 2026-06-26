@@ -3,7 +3,7 @@ import { TrendingUp, Users, Crown } from "lucide-react";
 /* The three Raven dashboards. #1 runs on live data; #2 and #3 are in beta,
    rendering representative sample data until their feeds are wired up. */
 export const DASHBOARDS = [
-  { id: "dashboard", label: "Insider Trades", short: "Trades", icon: TrendingUp, beta: false },
+  { id: "deals", label: "Insider Trades", short: "Trades", icon: TrendingUp, beta: false },
   { id: "movements", label: "Management Movements", short: "Movements", icon: Users, beta: true },
   { id: "superinvestors", label: "Superinvestors", short: "Superinvestors", icon: Crown, beta: true },
 ];
