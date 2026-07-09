@@ -46,13 +46,50 @@ _DB_POOL = None
 def _db_pool():
     global _DB_POOL
     if _DB_POOL is None:
-        _DB_POOL = psycopg2.pool.ThreadedConnectionPool(1, 10, dsn=DATABASE_URL)
+        _DB_POOL = psycopg2.pool.ThreadedConnectionPool(
+            1, 10, dsn=DATABASE_URL,
+            connect_timeout=10,
+            # Keep pooled connections alive across the app(Frankfurt)->DB(Ireland)
+            # hop so idle TCP sessions aren't silently dropped — the cause of the
+            # recurring "could not send data to server: Connection timed out".
+            keepalives=1, keepalives_idle=30, keepalives_interval=10, keepalives_count=5,
+        )
     return _DB_POOL
+
+
+def _borrow_live_conn(pool):
+    """Return a pooled connection that is actually alive.
+
+    Pooled connections can go stale on the cross-region link (an idle TCP
+    session gets dropped), and psycopg2's pool will hand a dead one to the next
+    request — which then fails with "could not send data to server: Connection
+    timed out" until the process is restarted. So validate each borrowed
+    connection with a cheap SELECT 1, and if it's dead, discard it and let the
+    pool open a fresh one. With TCP keepalives this self-heals without a restart.
+    """
+    last_err = None
+    for _ in range(3):
+        conn = pool.getconn()
+        try:
+            with conn.cursor() as cur:
+                cur.execute("SELECT 1")
+            conn.rollback()
+            return conn
+        except Exception as e:  # stale/dead — drop it; the pool opens a fresh one
+            last_err = e
+            try:
+                pool.putconn(conn, close=True)
+            except Exception:
+                pass
+    raise psycopg2.OperationalError(
+        f"could not obtain a live database connection: {last_err}"
+    )
+
 
 @contextmanager
 def get_db():
     pool = _db_pool()
-    conn = pool.getconn()
+    conn = _borrow_live_conn(pool)
     broken = False
     try:
         yield conn
