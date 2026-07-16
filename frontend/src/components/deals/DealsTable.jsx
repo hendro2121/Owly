@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState } from "react";
 import {
   useReactTable,
   getCoreRowModel,
@@ -16,7 +16,11 @@ import {
 } from "@/components/ui/table";
 import { dealColumns } from "./columns";
 
-export function DealsTable({ data, onRowClick }) {
+/* Row heights follow the enterprise-table convention: condensed 40px for
+   scanning a lot of rows, regular 48px when you want breathing room. */
+const ROW_PAD = { compact: "py-2", regular: "py-3.5" };
+
+export function DealsTable({ data, onRowClick, density = "compact", clusterTickers }) {
   const [sorting, setSorting] = useState([]);
   const [columnSizing, setColumnSizing] = useState({});
 
@@ -33,11 +37,13 @@ export function DealsTable({ data, onRowClick }) {
     enableColumnResizing: true,
   });
 
+  const pad = ROW_PAD[density] || ROW_PAD.regular;
+
   return (
-    <div className="border border-grey-200 rounded-xl overflow-hidden">
+    <div className="overflow-hidden rounded-xl border border-grey-200">
       <div className="max-h-[620px] overflow-y-auto">
         <Table>
-          <TableHeader className="sticky top-0 bg-white z-10">
+          <TableHeader className="sticky top-0 z-10 bg-white">
             {table.getHeaderGroups().map((hg) => (
               <TableRow key={hg.id} className="border-b-2 border-grey-900 hover:bg-transparent">
                 {hg.headers.map((header) => {
@@ -56,8 +62,8 @@ export function DealsTable({ data, onRowClick }) {
                         <div
                           onMouseDown={header.getResizeHandler()}
                           onTouchStart={header.getResizeHandler()}
-                          className={`absolute right-0 top-0 h-full w-1 cursor-col-resize select-none touch-none hover:bg-owly-orange/40 ${
-                            header.column.getIsResizing() ? "bg-owly-orange" : ""
+                          className={`absolute right-0 top-0 h-full w-1 cursor-col-resize touch-none select-none hover:bg-lime-300 ${
+                            header.column.getIsResizing() ? "bg-lime-400" : ""
                           }`}
                         />
                       )}
@@ -79,26 +85,30 @@ export function DealsTable({ data, onRowClick }) {
                 </TableCell>
               </TableRow>
             ) : (
-              table.getRowModel().rows.map((row) => (
-                <TableRow
-                  key={row.id}
-                  className="cursor-pointer"
-                  onClick={() => onRowClick?.(row.original)}
-                >
-                  {row.getVisibleCells().map((cell) => {
-                    const align = cell.column.columnDef.meta?.align;
-                    return (
-                      <TableCell
-                        key={cell.id}
-                        style={{ width: cell.column.getSize() }}
-                        className={align === "right" ? "text-right" : ""}
-                      >
-                        {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                      </TableCell>
-                    );
-                  })}
-                </TableRow>
-              ))
+              table.getRowModel().rows.map((row) => {
+                const inCluster = clusterTickers?.has(row.original.ticker);
+                return (
+                  <TableRow
+                    key={row.id}
+                    onClick={() => onRowClick?.(row.original)}
+                    title={inCluster ? "Cluster — several insiders traded this company in this window" : undefined}
+                    className={`cursor-pointer ${inCluster ? "shadow-[inset_2px_0_0_0_#D4F000]" : ""}`}
+                  >
+                    {row.getVisibleCells().map((cell) => {
+                      const align = cell.column.columnDef.meta?.align;
+                      return (
+                        <TableCell
+                          key={cell.id}
+                          style={{ width: cell.column.getSize() }}
+                          className={`${pad} ${align === "right" ? "text-right" : ""}`}
+                        >
+                          {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                        </TableCell>
+                      );
+                    })}
+                  </TableRow>
+                );
+              })
             )}
           </TableBody>
         </Table>

@@ -2,11 +2,34 @@ import { useState, useMemo } from "react";
 import { DealsTable } from "@/components/deals/DealsTable";
 import { DealsToolbar } from "@/components/deals/DealsToolbar";
 
+/* Trades an insider didn't choose the timing of — vesting schedules, tax
+   withholding, option mechanics. They carry no conviction signal, so hiding
+   them is the single most useful filter on this screen. */
+const NON_DISCRETIONARY = new Set([
+  "Vesting", "TaxSale", "OptionsExercise", "HedgeSettlement", "Conversion", "Transfer",
+]);
+
+const CSV_COLS = [
+  "transaction_date", "ticker", "company", "director", "role",
+  "transaction_type", "shares", "price", "value", "currency", "source_url",
+];
+
+function toCsv(rows) {
+  const esc = (v) => {
+    const s = v == null ? "" : String(v);
+    return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+  };
+  return [CSV_COLS.join(","), ...rows.map((r) => CSV_COLS.map((c) => esc(r[c])).join(","))].join("\n");
+}
+
 export function FeedTab({ deals, onDealClick }) {
   const [tf, setTf] = useState("All");
   const [q, setQ] = useState("");
   const [mv, setMv] = useState(0);
   const [period, setPeriod] = useState("All");
+  const [openMarketOnly, setOpenMarketOnly] = useState(false);
+  const [clustersOnly, setClustersOnly] = useState(false);
+  const [density, setDensity] = useState("compact");
 
   const cutoff = useMemo(() => {
     if (period === "All") return null;
@@ -21,9 +44,12 @@ export function FeedTab({ deals, onDealClick }) {
     return c;
   }, [period]);
 
-  const filtered = useMemo(() => deals.filter((t) => {
+  // Everything except the cluster pass — clusters are derived from what's left,
+  // so the cluster count always reflects the window you're actually looking at.
+  const base = useMemo(() => deals.filter((t) => {
     if (t.ticker && (/^\d/.test(t.ticker) || (/\d$/.test(t.ticker) && t.ticker.length >= 4))) return false;
     if (tf !== "All" && t.transaction_type !== tf) return false;
+    if (openMarketOnly && NON_DISCRETIONARY.has(t.transaction_type)) return false;
     if (q) {
       const s = q.toLowerCase();
       if (![t.company, t.ticker, t.director].some((x) => (x || "").toLowerCase().includes(s))) return false;
@@ -31,22 +57,54 @@ export function FeedTab({ deals, onDealClick }) {
     if (t.value < mv) return false;
     if (cutoff && new Date(t.transaction_date) < cutoff) return false;
     return true;
-  }), [deals, tf, q, mv, cutoff]);
+  }), [deals, tf, q, mv, cutoff, openMarketOnly]);
+
+  // A cluster = a company several *different* insiders traded in this window.
+  const clusterTickers = useMemo(() => {
+    const byTicker = new Map();
+    for (const d of base) {
+      if (!d.ticker) continue;
+      if (!byTicker.has(d.ticker)) byTicker.set(d.ticker, new Set());
+      byTicker.get(d.ticker).add(d.director);
+    }
+    return new Set([...byTicker].filter(([, insiders]) => insiders.size >= 2).map(([t]) => t));
+  }, [base]);
+
+  const filtered = useMemo(
+    () => (clustersOnly ? base.filter((d) => clusterTickers.has(d.ticker)) : base),
+    [base, clustersOnly, clusterTickers]
+  );
+
+  const exportCsv = () => {
+    const blob = new Blob([toCsv(filtered)], { type: "text/csv;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `owly-deals-${new Date().toISOString().slice(0, 10)}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
 
   return (
     <div>
       <DealsToolbar
-        search={q}
-        onSearchChange={setQ}
-        typeFilter={tf}
-        onTypeChange={setTf}
-        minValue={mv}
-        onMinValueChange={setMv}
-        period={period}
-        onPeriodChange={setPeriod}
+        search={q} onSearchChange={setQ}
+        typeFilter={tf} onTypeChange={setTf}
+        minValue={mv} onMinValueChange={setMv}
+        period={period} onPeriodChange={setPeriod}
+        openMarketOnly={openMarketOnly} onOpenMarketChange={setOpenMarketOnly}
+        clustersOnly={clustersOnly} onClustersChange={setClustersOnly}
+        clusterCount={clusterTickers.size}
+        density={density} onDensityChange={setDensity}
+        onExport={exportCsv}
         count={filtered.length}
       />
-      <DealsTable data={filtered} onRowClick={onDealClick} />
+      <DealsTable
+        data={filtered}
+        onRowClick={onDealClick}
+        density={density}
+        clusterTickers={clusterTickers}
+      />
     </div>
   );
 }

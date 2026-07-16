@@ -1,7 +1,6 @@
 import { useState, useEffect } from "react";
 import { Nav } from "@/components/layout/Nav";
 import { Dashboard } from "@/components/dashboard/Dashboard";
-import { Overview } from "@/components/dashboard/Overview";
 import { MovementsDashboard } from "@/components/dashboard/MovementsDashboard";
 import { SuperinvestorsDashboard } from "@/components/dashboard/SuperinvestorsDashboard";
 import { Insights } from "@/components/insights/Insights";
@@ -71,8 +70,9 @@ export default function App() {
     <WatchlistProvider user={user} go={go}>
       <div className="min-h-screen bg-white">
         <Nav page={page} go={go} user={user} onLogout={handleLogout} />
-        {page === "dashboard" && <Overview go={go} setTicker={setTicker} />}
-        {page === "deals" && (
+        {/* The deals workbench IS the dashboard — "dashboard" and "deals" both
+            land here so every existing link and the landing CTA keep working. */}
+        {(page === "dashboard" || page === "deals") && (
           <Dashboard go={go} setTicker={setTicker} user={user} isPro={isPro} />
         )}
         {page === "movements" && <MovementsDashboard go={go} />}
