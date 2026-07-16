@@ -35,6 +35,16 @@ export const fmt = {
       : "",
 };
 
+/* SENS announcements often SHOUT names ("SANTOVA LIMITED"). Normalise all-caps
+   strings to title case, keeping short acronyms (MTN, GP, PLC) as they are. */
+export const titleIfShouty = (s) => {
+  if (!s || s !== s.toUpperCase() || !/[A-Z]/.test(s)) return s;
+  return s
+    .split(/\s+/)
+    .map((w) => (w.replace(/[^A-Z]/g, "").length <= 3 ? w : w.charAt(0) + w.slice(1).toLowerCase()))
+    .join(" ");
+};
+
 export const typeLabel = (type) => {
   const map = {
     HedgeSettlement: "Hedge",

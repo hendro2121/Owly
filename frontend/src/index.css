@@ -17,6 +17,26 @@
 }
 
 @layer utilities {
+  /* Slim, rounded overlay scrollbar — the fat grey default reads dated. */
+  .scroll-sleek {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(10, 10, 10, 0.15) transparent;
+  }
+  .scroll-sleek::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  .scroll-sleek::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  .scroll-sleek::-webkit-scrollbar-thumb {
+    background: rgba(10, 10, 10, 0.12);
+    border-radius: 999px;
+  }
+  .scroll-sleek::-webkit-scrollbar-thumb:hover {
+    background: rgba(10, 10, 10, 0.28);
+  }
+
   /* Ramp-style dotted grid texture */
   .bg-dot-grid {
     background-image: radial-gradient(circle, rgba(10, 10, 10, 0.07) 1px, transparent 1px);

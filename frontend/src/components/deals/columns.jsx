@@ -2,7 +2,7 @@ import { createColumnHelper } from "@tanstack/react-table";
 import { ChevronUp, ChevronDown, ChevronsUpDown, ArrowUp, ArrowDown } from "lucide-react";
 import { CompanyLogo } from "@/components/shared/CompanyLogo";
 import { SensButton } from "@/components/shared/SensButton";
-import { fmt, fmtCur, curSymbol, isNonDiscretionary, typeLabel } from "@/lib/format";
+import { fmt, fmtCur, curSymbol, isNonDiscretionary, typeLabel, titleIfShouty } from "@/lib/format";
 
 const col = createColumnHelper();
 
@@ -53,8 +53,10 @@ function TypeCell({ type }) {
 export const dealColumns = [
   col.accessor("transaction_date", {
     header: ({ column }) => <SortHeader column={column}>Date</SortHeader>,
-    cell: (info) => <span className="text-[12.5px] text-grey-500 tabular-nums">{fmt.d(info.getValue())}</span>,
-    size: 96,
+    cell: (info) => (
+      <span className="whitespace-nowrap text-[12.5px] text-grey-500 tabular-nums">{fmt.d(info.getValue())}</span>
+    ),
+    size: 92,
   }),
 
   col.accessor("ticker", {
@@ -65,7 +67,7 @@ export const dealColumns = [
         <div className="flex min-w-0 items-center gap-2.5">
           <CompanyLogo ticker={d.ticker} name={d.company} size={26} className="rounded-full ring-1 ring-grey-900/5" />
           <span className="text-[13px] font-semibold text-grey-900">{d.ticker}</span>
-          <span className="truncate text-[12.5px] text-grey-500">{d.company}</span>
+          <span className="truncate text-[12.5px] text-grey-500">{titleIfShouty(d.company)}</span>
         </div>
       );
     },
@@ -75,9 +77,9 @@ export const dealColumns = [
   col.accessor("director", {
     header: "Director",
     cell: (info) => (
-      <span className="block truncate text-[13px] text-grey-900">{info.getValue()}</span>
+      <span className="block truncate text-[13px] text-grey-900">{titleIfShouty(info.getValue())}</span>
     ),
-    size: 170,
+    size: 160,
   }),
 
   col.accessor("role", {
@@ -85,7 +87,8 @@ export const dealColumns = [
     cell: (info) => (
       <span className="block truncate text-[12.5px] text-grey-700">{info.getValue() || "—"}</span>
     ),
-    size: 130,
+    size: 120,
+    meta: { responsive: "hidden md:table-cell" },
   }),
 
   col.accessor("transaction_type", {
@@ -98,8 +101,8 @@ export const dealColumns = [
   col.accessor("shares", {
     header: ({ column }) => <SortHeader column={column} right>Shares</SortHeader>,
     cell: (info) => <span className="text-[12.5px] text-grey-700 tabular-nums">{fmt.num(info.getValue())}</span>,
-    size: 88,
-    meta: { align: "right" },
+    size: 84,
+    meta: { align: "right", responsive: "hidden xl:table-cell" },
   }),
 
   col.accessor("price", {
@@ -113,8 +116,8 @@ export const dealColumns = [
         </span>
       );
     },
-    size: 84,
-    meta: { align: "right" },
+    size: 82,
+    meta: { align: "right", responsive: "hidden lg:table-cell" },
   }),
 
   col.accessor("value", {

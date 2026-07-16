@@ -69,7 +69,7 @@ export function AppShell({ page, go, user, onLogout, search, onSearchChange, chi
             title="Back to owly.co"
           >
             <OwlyLogo size={19} />
-            {!collapsed && <span className="text-[15px] font-semibold tracking-tight text-grey-900">Owly</span>}
+            {!collapsed && <span className="text-[14px] font-bold tracking-[0.02em] text-grey-900">OWLY</span>}
           </button>
           {!collapsed && (
             <button

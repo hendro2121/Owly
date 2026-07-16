@@ -16,10 +16,7 @@ import {
 } from "@/components/ui/table";
 import { dealColumns } from "./columns";
 
-/* One compact height — enough for a 26px logo, small enough to fit a screenful. */
-const ROW_PAD = { compact: "py-[7px]", regular: "py-3" };
-
-export function DealsTable({ data, onRowClick, density = "compact", clusterTickers }) {
+export function DealsTable({ data, onRowClick }) {
   const [sorting, setSorting] = useState([]);
   const [columnSizing, setColumnSizing] = useState({});
 
@@ -36,23 +33,21 @@ export function DealsTable({ data, onRowClick, density = "compact", clusterTicke
     enableColumnResizing: true,
   });
 
-  const pad = ROW_PAD[density] || ROW_PAD.regular;
-
   return (
     // A floating surface, not a boxed grid — soft elevation instead of hard borders.
-    <div className="flex h-full flex-col overflow-hidden rounded-2xl bg-white shadow-soft ring-1 ring-grey-900/5">
-      <div className="min-h-0 flex-1 overflow-y-auto">
+    <div className="relative flex h-full flex-col overflow-hidden rounded-2xl bg-white shadow-soft ring-1 ring-grey-900/5">
+      <div className="scroll-sleek min-h-0 flex-1 overflow-y-auto">
         <Table>
           <TableHeader className="sticky top-0 z-10 bg-white shadow-[0_1px_0_0_#F3F3F3]">
             {table.getHeaderGroups().map((hg) => (
               <TableRow key={hg.id} className="border-none hover:bg-transparent">
                 {hg.headers.map((header) => {
-                  const align = header.column.columnDef.meta?.align;
+                  const meta = header.column.columnDef.meta || {};
                   return (
                     <TableHead
                       key={header.id}
                       style={{ width: header.getSize() }}
-                      className={`relative select-none ${align === "right" ? "text-right" : ""}`}
+                      className={`relative select-none ${meta.align === "right" ? "text-right" : ""} ${meta.responsive || ""}`}
                     >
                       {header.isPlaceholder
                         ? null
@@ -79,40 +74,34 @@ export function DealsTable({ data, onRowClick, density = "compact", clusterTicke
               <TableRow>
                 <TableCell
                   colSpan={dealColumns.length}
-                  className="h-24 text-center font-mono text-sm text-grey-400"
+                  className="h-24 text-center text-sm text-grey-400"
                 >
                   No deals match your filters.
                 </TableCell>
               </TableRow>
             ) : (
-              table.getRowModel().rows.map((row) => {
-                const inCluster = clusterTickers?.has(row.original.ticker);
-                return (
-                  <TableRow
-                    key={row.id}
-                    onClick={() => onRowClick?.(row.original)}
-                    title={inCluster ? "Cluster — several insiders traded this company in this window" : undefined}
-                    className={`cursor-pointer ${inCluster ? "shadow-[inset_2px_0_0_0_#D4F000]" : ""}`}
-                  >
-                    {row.getVisibleCells().map((cell) => {
-                      const align = cell.column.columnDef.meta?.align;
-                      return (
-                        <TableCell
-                          key={cell.id}
-                          style={{ width: cell.column.getSize() }}
-                          className={`${pad} ${align === "right" ? "text-right" : ""}`}
-                        >
-                          {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                        </TableCell>
-                      );
-                    })}
-                  </TableRow>
-                );
-              })
+              table.getRowModel().rows.map((row) => (
+                <TableRow key={row.id} onClick={() => onRowClick?.(row.original)} className="cursor-pointer">
+                  {row.getVisibleCells().map((cell) => {
+                    const meta = cell.column.columnDef.meta || {};
+                    return (
+                      <TableCell
+                        key={cell.id}
+                        style={{ width: cell.column.getSize() }}
+                        className={`py-[7px] ${meta.align === "right" ? "text-right" : ""} ${meta.responsive || ""}`}
+                      >
+                        {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                      </TableCell>
+                    );
+                  })}
+                </TableRow>
+              ))
             )}
           </TableBody>
         </Table>
       </div>
+      {/* Quiet "more below" cue instead of a hard cut-off. */}
+      <div className="pointer-events-none absolute inset-x-0 bottom-0 h-8 rounded-b-2xl bg-gradient-to-t from-white to-transparent" />
     </div>
   );
 }

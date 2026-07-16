@@ -100,11 +100,7 @@ export function FeedTab({ deals, onDealClick, search = "" }) {
       />
       {/* Takes whatever height is left — the rows scroll, the page never does. */}
       <div className="min-h-0 flex-1">
-        <DealsTable
-          data={filtered}
-          onRowClick={onDealClick}
-          clusterTickers={clusterTickers}
-        />
+        <DealsTable data={filtered} onRowClick={onDealClick} />
       </div>
     </div>
   );
