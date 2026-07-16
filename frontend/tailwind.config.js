@@ -46,9 +46,11 @@ export default {
         },
       },
       fontFamily: {
-        sans: ['Outfit', 'system-ui', '-apple-system', 'sans-serif'],
+        // SF Pro on Apple devices (the exact look of the reference shots),
+        // Inter — its web twin — everywhere else.
+        sans: ['-apple-system', 'BlinkMacSystemFont', 'Inter', 'Segoe UI', 'sans-serif'],
         mono: ['Geist Mono', 'ui-monospace', 'monospace'],
-        display: ['Outfit', 'system-ui', 'sans-serif'],
+        display: ['-apple-system', 'BlinkMacSystemFont', 'Inter', 'Segoe UI', 'sans-serif'],
       },
       maxWidth: {
         page: '1200px',

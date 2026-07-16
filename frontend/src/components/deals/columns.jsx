@@ -27,16 +27,24 @@ function SortHeader({ column, right, children }) {
   );
 }
 
-/* Type as quiet coloured text with a tiny triangle — the reference pattern —
-   rather than a loud pill. Non-discretionary types stay grey. */
+/* Buy wears the brand's bright lime pill; Sell a soft red one; the
+   non-discretionary types stay quiet grey. */
 function TypeCell({ type }) {
   if (isNonDiscretionary(type)) {
-    return <span className="text-[12px] text-grey-500">{typeLabel(type)}</span>;
+    return (
+      <span className="inline-flex items-center rounded-md bg-grey-100 px-2 py-0.5 text-[11px] font-medium text-grey-600">
+        {typeLabel(type)}
+      </span>
+    );
   }
   const buy = type === "Buy";
   return (
-    <span className={`inline-flex items-center gap-1 text-[12.5px] font-semibold ${buy ? "text-lime-600" : "text-sell"}`}>
-      {buy ? <ArrowUp className="h-3 w-3" strokeWidth={3} /> : <ArrowDown className="h-3 w-3" strokeWidth={3} />}
+    <span
+      className={`inline-flex items-center gap-1 rounded-md px-2 py-0.5 text-[11px] font-semibold ${
+        buy ? "bg-lime-300 text-grey-900" : "bg-sell-bg text-sell"
+      }`}
+    >
+      {buy ? <ArrowUp className="h-2.5 w-2.5" strokeWidth={3} /> : <ArrowDown className="h-2.5 w-2.5" strokeWidth={3} />}
       {typeLabel(type)}
     </span>
   );
@@ -66,16 +74,18 @@ export const dealColumns = [
 
   col.accessor("director", {
     header: "Director",
-    cell: (info) => {
-      const d = info.row.original;
-      return (
-        <div className="flex min-w-0 items-baseline gap-1.5">
-          <span className="truncate text-[13px] text-grey-900">{d.director}</span>
-          <span className="shrink-0 text-[11px] text-grey-400">{d.role}</span>
-        </div>
-      );
-    },
-    size: 210,
+    cell: (info) => (
+      <span className="block truncate text-[13px] text-grey-900">{info.getValue()}</span>
+    ),
+    size: 170,
+  }),
+
+  col.accessor("role", {
+    header: "Role",
+    cell: (info) => (
+      <span className="block truncate text-[12.5px] text-grey-700">{info.getValue() || "—"}</span>
+    ),
+    size: 130,
   }),
 
   col.accessor("transaction_type", {
