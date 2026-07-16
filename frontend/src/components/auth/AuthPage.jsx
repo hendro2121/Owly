@@ -32,7 +32,7 @@ export function AuthPage({ go, setUser }) {
         {mode === "login" ? "LOG IN" : "SIGN UP"}
       </h1>
       <p className="text-grey-500 text-[15px] mb-8">
-        {mode === "login" ? "Welcome back." : "Create your free Raven account."}
+        {mode === "login" ? "Welcome back." : "Create your free Owly account."}
       </p>
 
       <form onSubmit={submit} className="flex flex-col gap-3.5">
@@ -60,7 +60,7 @@ export function AuthPage({ go, setUser }) {
       <div className="mt-5 text-center">
         <button
           onClick={() => { setMode(mode === "login" ? "signup" : "login"); setError(""); }}
-          className="bg-transparent border-none text-raven-orange text-sm font-semibold cursor-pointer"
+          className="bg-transparent border-none text-owly-orange text-sm font-semibold cursor-pointer"
         >
           {mode === "login"
             ? "Don't have an account? Sign up"

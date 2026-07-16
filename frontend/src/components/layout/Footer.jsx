@@ -1,4 +1,4 @@
-import { RavenLogo } from "@/components/shared/RavenLogo";
+import { OwlyLogo } from "@/components/shared/OwlyLogo";
 
 const COLUMNS = [
   {
@@ -63,8 +63,8 @@ export function Footer({ go }) {
           {/* Brand */}
           <div className="max-w-xs">
             <button onClick={() => go("landing")} className="flex items-center gap-2 bg-transparent border-none cursor-pointer">
-              <RavenLogo size={24} color="#D4F000" />
-              <span className="font-bold text-[18px] tracking-tight">Raven</span>
+              <OwlyLogo size={24} color="#D4F000" />
+              <span className="font-bold text-[18px] tracking-tight">Owly</span>
             </button>
             <p className="text-grey-400 text-sm leading-relaxed mt-4">
               Insider-dealing intelligence for the JSE and beyond. Follow the smart money before the market moves.
@@ -109,7 +109,7 @@ export function Footer({ go }) {
         {/* Bottom bar */}
         <div className="mt-14 pt-6 border-t border-white/10 flex flex-col sm:flex-row gap-3 sm:items-center sm:justify-between">
           <span className="text-[12px] text-grey-500 font-mono">
-            © {new Date().getFullYear()} Raven · Data sourced from exchange regulatory filings. Not financial advice.
+            © {new Date().getFullYear()} Owly · Data sourced from exchange regulatory filings. Not financial advice.
           </span>
           <div className="flex items-center gap-2 text-[12px] font-mono text-grey-500">
             <span className="w-1.5 h-1.5 rounded-full bg-lime-400 animate-pulse" />

@@ -1,6 +1,5 @@
 import { useState, useEffect } from "react";
 import { Nav } from "@/components/layout/Nav";
-import { Landing } from "@/components/landing/Landing";
 import { Dashboard } from "@/components/dashboard/Dashboard";
 import { Overview } from "@/components/dashboard/Overview";
 import { MovementsDashboard } from "@/components/dashboard/MovementsDashboard";
@@ -14,11 +13,32 @@ import { AuthPage } from "@/components/auth/AuthPage";
 import { WatchlistProvider } from "@/lib/watchlist";
 import api from "./api";
 
+/* The marketing landing is a standalone static page served at "/" — this app is
+   mounted at "/app". Landing CTAs deep-link in via ?p=<page>. */
+const PAGES = [
+  "dashboard", "deals", "movements", "superinvestors",
+  "insights", "post", "watchlist", "company", "pricing", "login",
+];
+
+function initialPage() {
+  const p = new URLSearchParams(window.location.search).get("p");
+  return PAGES.includes(p) ? p : "dashboard";
+}
+
 export default function App() {
-  const [page, setPage] = useState("landing");
+  const [page, setPage] = useState(initialPage);
   const [ticker, setTicker] = useState(null);
   const [user, setUser] = useState(null);
   const [authLoading, setAuthLoading] = useState(true);
+
+  // "landing" is no longer a React page — send those links to the static one.
+  const go = (p) => {
+    if (p === "landing") {
+      window.location.href = "/";
+      return;
+    }
+    setPage(p);
+  };
 
   useEffect(() => {
     if (api.getToken()) {
@@ -35,7 +55,7 @@ export default function App() {
       if (api.getToken()) {
         api.me().then((u) => setUser(u)).catch(() => {});
       }
-      window.history.replaceState({}, "", "/");
+      window.history.replaceState({}, "", "/app");
       setPage("dashboard");
     }
   }, []);
@@ -44,28 +64,27 @@ export default function App() {
   const handleLogout = () => {
     api.logout();
     setUser(null);
-    setPage("landing");
+    go("landing");
   };
 
   return (
-    <WatchlistProvider user={user} go={setPage}>
+    <WatchlistProvider user={user} go={go}>
       <div className="min-h-screen bg-white">
-        <Nav page={page} go={setPage} user={user} onLogout={handleLogout} />
-        {page === "landing" && <Landing go={setPage} />}
-        {page === "dashboard" && <Overview go={setPage} />}
+        <Nav page={page} go={go} user={user} onLogout={handleLogout} />
+        {page === "dashboard" && <Overview go={go} />}
         {page === "deals" && (
-          <Dashboard go={setPage} setTicker={setTicker} user={user} isPro={isPro} />
+          <Dashboard go={go} setTicker={setTicker} user={user} isPro={isPro} />
         )}
-        {page === "movements" && <MovementsDashboard go={setPage} />}
-        {page === "superinvestors" && <SuperinvestorsDashboard go={setPage} />}
-        {page === "insights" && <Insights go={setPage} />}
-        {page === "post" && <Post go={setPage} />}
-        {page === "watchlist" && <WatchlistPage go={setPage} user={user} setTicker={setTicker} />}
+        {page === "movements" && <MovementsDashboard go={go} />}
+        {page === "superinvestors" && <SuperinvestorsDashboard go={go} />}
+        {page === "insights" && <Insights go={go} />}
+        {page === "post" && <Post go={go} />}
+        {page === "watchlist" && <WatchlistPage go={go} user={user} setTicker={setTicker} />}
         {page === "company" && ticker && (
-          <CompanyPage ticker={ticker} go={setPage} user={user} isPro={isPro} />
+          <CompanyPage ticker={ticker} go={go} user={user} isPro={isPro} />
         )}
-        {page === "pricing" && <PricingPage go={setPage} user={user} />}
-        {page === "login" && <AuthPage go={setPage} setUser={setUser} />}
+        {page === "pricing" && <PricingPage go={go} user={user} />}
+        {page === "login" && <AuthPage go={go} setUser={setUser} />}
       </div>
     </WatchlistProvider>
   );

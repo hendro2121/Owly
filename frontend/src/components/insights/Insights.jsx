@@ -30,7 +30,7 @@ export function Insights({ go }) {
         </h1>
         <p className="text-lg text-grey-500 leading-relaxed mt-5">
           How to read insider activity, management moves and superinvestor disclosures — plain-English
-          guides from the Raven team.
+          guides from the Owly team.
         </p>
       </div>
 
@@ -105,7 +105,7 @@ export function Insights({ go }) {
       <div className="mt-14 rounded-2xl border border-grey-200 bg-grey-50 px-7 py-8 flex flex-col sm:flex-row sm:items-center justify-between gap-5">
         <div>
           <h3 className="text-xl font-bold text-grey-900">Read the data behind the writing</h3>
-          <p className="text-grey-500 text-sm mt-1">Every guide is built on Raven’s live dashboards.</p>
+          <p className="text-grey-500 text-sm mt-1">Every guide is built on Owly’s live dashboards.</p>
         </div>
         <button
           onClick={() => go("dashboard")}

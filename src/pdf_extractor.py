@@ -1,5 +1,5 @@
 """
-Raven PDF Extractor
+Owly PDF Extractor
 ===================
 Extracts director dealing text from SENS PDF announcements.
 
@@ -66,7 +66,7 @@ class PDFExtractor:
         self.session.headers.update(HEADERS)
         self.delay = delay
         self._last_request = 0.0
-        self.cache_dir = cache_dir or os.path.join(tempfile.gettempdir(), "raven_pdfs")
+        self.cache_dir = cache_dir or os.path.join(tempfile.gettempdir(), "owly_pdfs")
         os.makedirs(self.cache_dir, exist_ok=True)
 
     def _throttle(self):
@@ -286,7 +286,7 @@ def extract_pdf_announcements(pdf_links: list[dict]) -> list[dict]:
 if __name__ == "__main__":
     import argparse
 
-    ap = argparse.ArgumentParser(description="Raven PDF Extractor")
+    ap = argparse.ArgumentParser(description="Owly PDF Extractor")
     ap.add_argument("--url", "-u", help="PDF URL to extract")
     ap.add_argument("--file", "-f", help="Local PDF file to extract")
     ap.add_argument("--output", "-o", help="Save extracted text to file")

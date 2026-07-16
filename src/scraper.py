@@ -1,5 +1,5 @@
 """
-Raven SENS Scraper
+Owly SENS Scraper
 ==================
 Scrapes director dealing announcements from Sharenet's SENS page.
 

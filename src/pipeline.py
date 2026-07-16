@@ -1,5 +1,5 @@
 """
-Raven Pipeline
+Owly Pipeline
 ==============
 End-to-end pipeline: Scrape Sharenet -> Parse -> Store -> Export
 
@@ -336,7 +336,7 @@ def print_summary(deals):
     avg_conf = sum(d["confidence"] for d in deals) / len(deals)
 
     print("\n" + "=" * 50)
-    print("  RAVEN PIPELINE SUMMARY")
+    print("  OWLY PIPELINE SUMMARY")
     print("=" * 50)
     print(f"  Total deals extracted:   {len(deals)}")
     print(f"  Companies:               {len(tickers)}")
@@ -350,7 +350,7 @@ def print_summary(deals):
 # ─── CLI ─────────────────────────────────────────────────────────────────────
 
 if __name__ == "__main__":
-    ap = argparse.ArgumentParser(description="Raven Insider Trading Pipeline")
+    ap = argparse.ArgumentParser(description="Owly Insider Trading Pipeline")
     ap.add_argument("--format", "-f", choices=["json", "csv"], default="json")
     args = ap.parse_args()
 

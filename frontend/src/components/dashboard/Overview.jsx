@@ -9,7 +9,7 @@ import {
   Star,
 } from "lucide-react";
 
-/* Market overview — three at-a-glance cards (AlphaSense-style) in the Raven
+/* Market overview — three at-a-glance cards (AlphaSense-style) in the Owly
    palette. Representative data matching the design comp; Director Deals wires
    to live data in a follow-up, Movements & Superinvestors stay on sample feeds. */
 

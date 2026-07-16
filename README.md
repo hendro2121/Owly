@@ -1,8 +1,8 @@
-# RAVEN
+# OWLY
 
 **JSE Insider Trading Intelligence**
 
-Raven tracks every director trade on the Johannesburg Stock Exchange and turns it into structured, searchable intelligence.
+Owly tracks every director trade on the Johannesburg Stock Exchange and turns it into structured, searchable intelligence.
 
 ## Stack
 
@@ -36,7 +36,7 @@ npm run dev
 
 ## Project Structure
 ```
-raven/
+owly/
 ├── src/
 │   ├── api.py              # FastAPI server (PostgreSQL)
 │   ├── scraper.py          # Company IR website scrapers

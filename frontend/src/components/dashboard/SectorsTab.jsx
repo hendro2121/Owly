@@ -40,7 +40,7 @@ export function SectorsTab({ initialSectors, market }) {
           </button>
         ))}
         {loading && (
-          <div className="w-1.5 h-1.5 rounded-full bg-raven-orange animate-pulse ml-2" />
+          <div className="w-1.5 h-1.5 rounded-full bg-owly-orange animate-pulse ml-2" />
         )}
       </div>
 

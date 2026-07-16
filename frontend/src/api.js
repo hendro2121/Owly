@@ -1,5 +1,5 @@
 /**
- * Raven API Client
+ * Owly API Client
  *
  * Connects the React frontend to the FastAPI backend.
  * In development, Vite proxies /api to localhost:8000.
@@ -9,12 +9,12 @@
 const BASE = '/api';
 
 function getToken() {
-  return localStorage.getItem('raven_token');
+  return localStorage.getItem('owly_token');
 }
 
 function setToken(token) {
-  if (token) localStorage.setItem('raven_token', token);
-  else localStorage.removeItem('raven_token');
+  if (token) localStorage.setItem('owly_token', token);
+  else localStorage.removeItem('owly_token');
 }
 
 function authHeaders() {

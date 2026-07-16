@@ -66,7 +66,7 @@ export function PricingPage({ go, user }) {
         SIMPLE <span className="bg-lime-300 text-grey-900 px-3 rounded-md">PRICING</span>
       </h1>
       <p className="text-center text-grey-500 text-base mt-3 mb-12 animate-rise" style={{ animationDelay: ".05s" }}>
-        Start free. Upgrade when Raven proves its value.
+        Start free. Upgrade when Owly proves its value.
       </p>
 
       <div className="grid grid-cols-2 gap-4 max-w-[700px] mx-auto">

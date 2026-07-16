@@ -58,7 +58,7 @@ export function Post({ go }) {
       <div className="flex items-center gap-3 mt-7 pb-8 border-b border-grey-200">
         <span className="inline-flex items-center justify-center h-9 w-9 rounded-full bg-grey-900 text-white text-xs font-bold font-mono">R</span>
         <div>
-          <div className="text-[13px] font-semibold text-grey-900">The Raven Team</div>
+          <div className="text-[13px] font-semibold text-grey-900">The Owly Team</div>
           <div className="text-[12px] font-mono text-grey-400">Updated June 2026</div>
         </div>
       </div>
@@ -73,7 +73,7 @@ export function Post({ go }) {
         <P>
           But the raw filings are noisy. Most of what gets reported isn’t a conviction trade at all — it’s
           options vesting, tax-driven sales, or scheme allocations. Reading director dealings well is mostly
-          about learning what to ignore. Here’s the framework Raven is built around.
+          about learning what to ignore. Here’s the framework Owly is built around.
         </P>
 
         <H2 icon={TrendingUp}>1. Buys matter more than sells</H2>
@@ -147,9 +147,9 @@ export function Post({ go }) {
           one input that sharpens a thesis you’ve built other ways, never as a standalone reason to act.
         </P>
 
-        <H2>Putting it together with Raven</H2>
+        <H2>Putting it together with Owly</H2>
         <P>
-          Raven exists to do the filtering for you: it scrapes every SENS dealing, strips out the vesting,
+          Owly exists to do the filtering for you: it scrapes every SENS dealing, strips out the vesting,
           tax and scheme noise, flags cluster buys across multiple insiders, and lets you size each trade by
           role and value. The goal isn’t to tell you what to buy — it’s to make sure you never miss the
           handful of trades that actually carry information.
@@ -166,7 +166,7 @@ export function Post({ go }) {
         </div>
 
         <p className="text-[12px] font-mono text-grey-400 leading-relaxed mt-8 pt-6 border-t border-grey-200">
-          This article is educational and does not constitute financial advice. Raven aggregates public
+          This article is educational and does not constitute financial advice. Owly aggregates public
           regulatory filings; always do your own research and consider professional advice before investing.
         </p>
       </div>

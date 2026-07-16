@@ -2,7 +2,7 @@
 Brazil CVM Insider Trading Adapter
 ===================================
 Downloads insider trading data from CVM (dados.cvm.gov.br) and stores
-it in the Raven PostgreSQL database.
+it in the Owly PostgreSQL database.
 
 Usage:
     python brazil_adapter.py --year 2025              # Download and print stats
@@ -275,7 +275,7 @@ def fetch_trades(year: int) -> list[dict]:
     skipped_asset = 0
     skipped_txn = 0
 
-    # Map CVM Portuguese transaction types → Raven types
+    # Map CVM Portuguese transaction types → Owly types
     TRANSACTION_MAP = {
         "Compra à vista": "Buy",
         "Compra à termo": "Buy",
@@ -443,7 +443,7 @@ def ensure_market_columns(conn) -> None:
 
 def store_in_db(deals: list[dict], companies: dict[str, dict], db_url: str,
                 ticker_map: dict[str, str] | None = None) -> dict:
-    """Insert trades and companies into the Raven PostgreSQL database.
+    """Insert trades and companies into the Owly PostgreSQL database.
 
     - Maps CNPJ → B3 ticker using ticker_map (e.g. PETR3, VALE3)
     - Adds company rows (upsert by ticker) with market='B3'

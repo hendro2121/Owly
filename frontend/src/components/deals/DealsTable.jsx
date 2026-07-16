@@ -56,8 +56,8 @@ export function DealsTable({ data, onRowClick }) {
                         <div
                           onMouseDown={header.getResizeHandler()}
                           onTouchStart={header.getResizeHandler()}
-                          className={`absolute right-0 top-0 h-full w-1 cursor-col-resize select-none touch-none hover:bg-raven-orange/40 ${
-                            header.column.getIsResizing() ? "bg-raven-orange" : ""
+                          className={`absolute right-0 top-0 h-full w-1 cursor-col-resize select-none touch-none hover:bg-owly-orange/40 ${
+                            header.column.getIsResizing() ? "bg-owly-orange" : ""
                           }`}
                         />
                       )}

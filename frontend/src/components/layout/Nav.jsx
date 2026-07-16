@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { Menu, X } from "lucide-react";
-import { RavenLogo } from "@/components/shared/RavenLogo";
+import { OwlyLogo } from "@/components/shared/OwlyLogo";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 
@@ -42,8 +42,8 @@ export function Nav({ page, go, user, onLogout }) {
           onClick={() => navTo("landing")}
           className="flex items-center gap-2 bg-transparent border-none cursor-pointer group z-10"
         >
-          <RavenLogo size={22} color="#0A0A0A" />
-          <span className="font-bold text-[16px] text-grey-900 tracking-tight">Raven</span>
+          <OwlyLogo size={22} color="#0A0A0A" />
+          <span className="font-bold text-[16px] text-grey-900 tracking-tight">Owly</span>
         </button>
 
         {/* Nav links — centered */}

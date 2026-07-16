@@ -316,7 +316,7 @@ export function Landing({ go }) {
             Follow insider conviction.
           </h1>
           <p className="text-lg md:text-xl text-grey-500 leading-relaxed max-w-[560px] mx-auto mt-6 animate-rise" style={{ animationDelay: ".1s" }}>
-            Raven turns every director trade, leadership move and superinvestor disclosure into clear,
+            Owly turns every director trade, leadership move and superinvestor disclosure into clear,
             searchable intelligence — before the market catches on.
           </p>
 
@@ -366,7 +366,7 @@ export function Landing({ go }) {
           <div>
             <SectionLabel num="01" label="Solution" />
             <p className="font-display text-[26px] md:text-[34px] font-bold tracking-tight leading-[1.18] text-grey-900 max-w-md">
-              Raven reads every filing, strips the noise, and surfaces the conviction trades that
+              Owly reads every filing, strips the noise, and surfaces the conviction trades that
               matter — in plain English, the moment they’re public.
             </p>
           </div>
@@ -400,7 +400,7 @@ export function Landing({ go }) {
         num="03"
         label="Insider conviction"
         title="See where executives back their own company."
-        desc="Open-market buys are the strongest tell in the market — and clusters of insiders buying together are stronger still. Raven ranks them by conviction, not just recency."
+        desc="Open-market buys are the strongest tell in the market — and clusters of insiders buying together are stronger still. Owly ranks them by conviction, not just recency."
         bullets={["Open-market buys vs routine admin, separated", "Cluster-buy detection across multiple insiders", "Sized by value and seniority"]}
         onCta={() => go("dashboard")}
         panel={<ExamplePanel icon={TrendingUp} label="Director Deals"><DealsBody /></ExamplePanel>}

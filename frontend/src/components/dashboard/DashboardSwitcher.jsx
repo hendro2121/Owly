@@ -1,6 +1,6 @@
 import { TrendingUp, Users, Crown } from "lucide-react";
 
-/* The three Raven dashboards. #1 runs on live data; #2 and #3 are in beta,
+/* The three Owly dashboards. #1 runs on live data; #2 and #3 are in beta,
    rendering representative sample data until their feeds are wired up. */
 export const DASHBOARDS = [
   { id: "deals", label: "Insider Trades", short: "Trades", icon: TrendingUp, beta: false },
