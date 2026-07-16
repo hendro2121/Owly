@@ -46,12 +46,13 @@ export default {
         },
       },
       fontFamily: {
-        sans: ['Inter', 'system-ui', '-apple-system', 'sans-serif'],
-        mono: ['JetBrains Mono', 'ui-monospace', 'monospace'],
-        display: ['Satoshi', 'Inter', 'system-ui', 'sans-serif'],
+        // Mirrors the landing's --sans / --mono tokens exactly.
+        sans: ['PP Mori', 'Instrument Sans', 'system-ui', '-apple-system', 'sans-serif'],
+        mono: ['Geist Mono', 'ui-monospace', 'monospace'],
+        display: ['PP Mori', 'Instrument Sans', 'system-ui', 'sans-serif'],
       },
       maxWidth: {
-        page: '1400px',
+        page: '1200px',
       },
       boxShadow: {
         subtle: '0 1px 2px rgba(0,0,0,0.04)',

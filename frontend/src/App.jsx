@@ -71,7 +71,7 @@ export default function App() {
     <WatchlistProvider user={user} go={go}>
       <div className="min-h-screen bg-white">
         <Nav page={page} go={go} user={user} onLogout={handleLogout} />
-        {page === "dashboard" && <Overview go={go} />}
+        {page === "dashboard" && <Overview go={go} setTicker={setTicker} />}
         {page === "deals" && (
           <Dashboard go={go} setTicker={setTicker} user={user} isPro={isPro} />
         )}
