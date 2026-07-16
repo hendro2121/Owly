@@ -28,10 +28,11 @@ const TableRow = forwardRef(({ className, ...props }, ref) => (
 TableRow.displayName = "TableRow";
 
 const TableHead = forwardRef(({ className, ...props }, ref) => (
+  // Sentence case, quiet grey — like a macOS/finance table header, not a terminal.
   <th
     ref={ref}
     className={cn(
-      "h-10 px-3 text-left align-middle text-[10px] font-mono font-medium text-grey-400 uppercase tracking-widest",
+      "h-10 px-3 text-left align-middle text-[12px] font-medium text-grey-500",
       className
     )}
     {...props}

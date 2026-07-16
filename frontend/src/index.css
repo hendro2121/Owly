@@ -1,6 +1,6 @@
-/* Same type system as the marketing landing — its --sans is 'PP Mori' with
-   'Instrument Sans' as the fallback that actually renders, and --mono is Geist Mono. */
-@import url('https://fonts.googleapis.com/css2?family=Instrument+Sans:ital,wght@0,400..700;1,400..700&family=Geist+Mono:wght@400;500;600&display=swap');
+/* Outfit — chosen as the free stand-in closest to PP Mori's geometry.
+   Geist Mono stays for the few remaining tabular/mono accents. */
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700&family=Geist+Mono:wght@400;500;600&display=swap');
 
 @tailwind base;
 @tailwind components;

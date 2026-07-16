@@ -1,26 +1,52 @@
 import { createColumnHelper } from "@tanstack/react-table";
-import { ArrowUpDown } from "lucide-react";
-import { TransactionTag } from "@/components/shared/TransactionTag";
+import { ChevronUp, ChevronDown, ChevronsUpDown, ArrowUp, ArrowDown } from "lucide-react";
+import { CompanyLogo } from "@/components/shared/CompanyLogo";
 import { SensButton } from "@/components/shared/SensButton";
-import { Badge } from "@/components/ui/badge";
-import { fmt, fmtCur, curSymbol, dealColor, dealColorHex } from "@/lib/format";
+import { fmt, fmtCur, curSymbol, isNonDiscretionary, typeLabel } from "@/lib/format";
 
 const col = createColumnHelper();
 
+/* Sortable header — sentence case, sort chevron appears on hover / when active,
+   without disturbing the label's alignment. */
+function SortHeader({ column, right, children }) {
+  const dir = column.getIsSorted();
+  return (
+    <button
+      onClick={() => column.toggleSorting(dir === "asc")}
+      className={`group inline-flex cursor-pointer items-center gap-1 border-none bg-transparent p-0 text-[12px] font-medium text-grey-500 hover:text-grey-900 ${right ? "ml-auto" : ""}`}
+    >
+      {children}
+      {dir === "asc" ? (
+        <ChevronUp className="h-3 w-3" strokeWidth={2.5} />
+      ) : dir === "desc" ? (
+        <ChevronDown className="h-3 w-3" strokeWidth={2.5} />
+      ) : (
+        <ChevronsUpDown className="h-3 w-3 opacity-0 transition-opacity group-hover:opacity-50" strokeWidth={2} />
+      )}
+    </button>
+  );
+}
+
+/* Type as quiet coloured text with a tiny triangle — the reference pattern —
+   rather than a loud pill. Non-discretionary types stay grey. */
+function TypeCell({ type }) {
+  if (isNonDiscretionary(type)) {
+    return <span className="text-[12px] text-grey-500">{typeLabel(type)}</span>;
+  }
+  const buy = type === "Buy";
+  return (
+    <span className={`inline-flex items-center gap-1 text-[12.5px] font-semibold ${buy ? "text-lime-600" : "text-sell"}`}>
+      {buy ? <ArrowUp className="h-3 w-3" strokeWidth={3} /> : <ArrowDown className="h-3 w-3" strokeWidth={3} />}
+      {typeLabel(type)}
+    </span>
+  );
+}
+
 export const dealColumns = [
   col.accessor("transaction_date", {
-    header: ({ column }) => (
-      <button
-        className="flex items-center gap-1 hover:text-grey-600"
-        onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-      >
-        Date <ArrowUpDown className="h-3 w-3" />
-      </button>
-    ),
-    cell: (info) => (
-      <span className="font-mono text-xs text-grey-400">{fmt.d(info.getValue())}</span>
-    ),
-    size: 110,
+    header: ({ column }) => <SortHeader column={column}>Date</SortHeader>,
+    cell: (info) => <span className="text-[12.5px] text-grey-500 tabular-nums">{fmt.d(info.getValue())}</span>,
+    size: 96,
   }),
 
   col.accessor("ticker", {
@@ -28,18 +54,14 @@ export const dealColumns = [
     cell: (info) => {
       const d = info.row.original;
       return (
-        <div className="flex items-center gap-2">
-          <span className="font-bold font-mono text-[13px]">{d.ticker}</span>
-          {d.exchange && d.exchange !== "JSE" && (
-            <Badge variant={d.exchange === "LSE" ? "lse" : d.exchange === "AMS" ? "ams" : "outline"}>
-              {d.exchange}
-            </Badge>
-          )}
-          <span className="text-grey-400 text-sm truncate">{d.company}</span>
+        <div className="flex min-w-0 items-center gap-2.5">
+          <CompanyLogo ticker={d.ticker} name={d.company} size={26} className="rounded-full ring-1 ring-grey-900/5" />
+          <span className="text-[13px] font-semibold text-grey-900">{d.ticker}</span>
+          <span className="truncate text-[12.5px] text-grey-500">{d.company}</span>
         </div>
       );
     },
-    size: 240,
+    size: 230,
   }),
 
   col.accessor("director", {
@@ -47,79 +69,56 @@ export const dealColumns = [
     cell: (info) => {
       const d = info.row.original;
       return (
-        <div className="flex items-center gap-2 min-w-0">
-          <span className="text-grey-600 truncate">{d.director}</span>
-          <span className="text-grey-300 text-[10px] font-mono shrink-0">{d.role}</span>
+        <div className="flex min-w-0 items-baseline gap-1.5">
+          <span className="truncate text-[13px] text-grey-900">{d.director}</span>
+          <span className="shrink-0 text-[11px] text-grey-400">{d.role}</span>
         </div>
       );
     },
-    size: 240,
+    size: 210,
   }),
 
   col.accessor("transaction_type", {
     header: "Type",
-    cell: (info) => <TransactionTag type={info.getValue()} />,
-    size: 90,
+    cell: (info) => <TypeCell type={info.getValue()} />,
+    size: 92,
     filterFn: "equals",
   }),
 
   col.accessor("shares", {
-    header: ({ column }) => (
-      <button
-        className="flex items-center gap-1 ml-auto hover:text-grey-600"
-        onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-      >
-        Shares <ArrowUpDown className="h-3 w-3" />
-      </button>
-    ),
-    cell: (info) => (
-      <span className="font-mono text-xs text-grey-500">{fmt.num(info.getValue())}</span>
-    ),
-    size: 100,
+    header: ({ column }) => <SortHeader column={column} right>Shares</SortHeader>,
+    cell: (info) => <span className="text-[12.5px] text-grey-700 tabular-nums">{fmt.num(info.getValue())}</span>,
+    size: 88,
     meta: { align: "right" },
   }),
 
   col.accessor("price", {
-    header: ({ column }) => (
-      <button
-        className="flex items-center gap-1 ml-auto hover:text-grey-600"
-        onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-      >
-        Price <ArrowUpDown className="h-3 w-3" />
-      </button>
-    ),
+    header: ({ column }) => <SortHeader column={column} right>Price</SortHeader>,
     cell: (info) => {
       const d = info.row.original;
       const v = info.getValue();
       return (
-        <span className="font-mono text-xs text-grey-500">
-          {v != null ? curSymbol(d.currency || "ZAR") + Number(v).toFixed(2) : "\u2014"}
+        <span className="text-[12.5px] text-grey-700 tabular-nums">
+          {v != null ? curSymbol(d.currency || "ZAR") + Number(v).toFixed(2) : "—"}
         </span>
       );
     },
-    size: 100,
+    size: 84,
     meta: { align: "right" },
   }),
 
   col.accessor("value", {
-    header: ({ column }) => (
-      <button
-        className="flex items-center gap-1 ml-auto hover:text-grey-600"
-        onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-      >
-        Value <ArrowUpDown className="h-3 w-3" />
-      </button>
-    ),
+    header: ({ column }) => <SortHeader column={column} right>Value</SortHeader>,
     cell: (info) => {
       const d = info.row.original;
-      const color = dealColorHex(d.transaction_type);
+      const sell = d.transaction_type === "Sell";
       return (
-        <span className="font-mono text-xs font-bold" style={{ color }}>
+        <span className={`text-[13px] font-semibold tabular-nums ${sell ? "text-sell" : "text-grey-900"}`}>
           {fmtCur(d.value, d.market || "JSE", d.currency)}
         </span>
       );
     },
-    size: 110,
+    size: 104,
     meta: { align: "right" },
     sortingFn: "basic",
   }),
@@ -128,10 +127,8 @@ export const dealColumns = [
     id: "sens",
     header: "",
     cell: (info) =>
-      info.row.original.source_url ? (
-        <SensButton id={info.row.original.id} />
-      ) : null,
-    size: 70,
+      info.row.original.source_url ? <SensButton id={info.row.original.id} /> : null,
+    size: 56,
     enableResizing: false,
   }),
 ];

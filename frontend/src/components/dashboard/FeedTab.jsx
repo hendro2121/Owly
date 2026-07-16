@@ -28,7 +28,6 @@ export function FeedTab({ deals, onDealClick, search = "" }) {
   const [period, setPeriod] = useState("All");
   const [openMarketOnly, setOpenMarketOnly] = useState(false);
   const [clustersOnly, setClustersOnly] = useState(false);
-  const [density, setDensity] = useState("compact");
 
   const cutoff = useMemo(() => {
     if (period === "All") return null;
@@ -47,7 +46,10 @@ export function FeedTab({ deals, onDealClick, search = "" }) {
   // so the cluster count always reflects the window you're actually looking at.
   const base = useMemo(() => deals.filter((t) => {
     if (t.ticker && (/^\d/.test(t.ticker) || (/\d$/.test(t.ticker) && t.ticker.length >= 4))) return false;
-    if (tf !== "All" && t.transaction_type !== tf) return false;
+    // Segmented type control: All | Buys | Sells | Other (anything non-Buy/Sell).
+    if (tf === "Other") {
+      if (t.transaction_type === "Buy" || t.transaction_type === "Sell") return false;
+    } else if (tf !== "All" && t.transaction_type !== tf) return false;
     if (openMarketOnly && NON_DISCRETIONARY.has(t.transaction_type)) return false;
     if (search) {
       const s = search.toLowerCase();
@@ -93,7 +95,6 @@ export function FeedTab({ deals, onDealClick, search = "" }) {
         openMarketOnly={openMarketOnly} onOpenMarketChange={setOpenMarketOnly}
         clustersOnly={clustersOnly} onClustersChange={setClustersOnly}
         clusterCount={clusterTickers.size}
-        density={density} onDensityChange={setDensity}
         onExport={exportCsv}
         count={filtered.length}
       />
@@ -102,7 +103,6 @@ export function FeedTab({ deals, onDealClick, search = "" }) {
         <DealsTable
           data={filtered}
           onRowClick={onDealClick}
-          density={density}
           clusterTickers={clusterTickers}
         />
       </div>

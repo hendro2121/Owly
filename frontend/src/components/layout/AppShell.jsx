@@ -110,7 +110,7 @@ export function AppShell({ page, go, user, onLogout, search, onSearchChange, chi
                     className={`relative flex w-full cursor-pointer items-center gap-2.5 border-none px-4 py-[7px] text-left text-[13px] transition-colors ${
                       active
                         ? "bg-lime-50 font-medium text-grey-900"
-                        : "bg-transparent text-grey-500 hover:bg-grey-50 hover:text-grey-900"
+                        : "bg-transparent text-grey-600 hover:bg-grey-50 hover:text-grey-900"
                     }`}
                   >
                     {active && <span className="absolute left-0 top-0 h-full w-[2px] bg-lime-400" />}
@@ -118,8 +118,7 @@ export function AppShell({ page, go, user, onLogout, search, onSearchChange, chi
                     {!collapsed && (
                       <>
                         <span className="truncate">{item.label}</span>
-                        {item.beta && <span className="font-mono text-[8px] font-bold text-grey-300">β</span>}
-                        <span className="ml-auto font-mono text-[9px] text-grey-300">{item.kbd}</span>
+                        {item.beta && <span className="ml-auto font-mono text-[8px] font-bold text-grey-300">β</span>}
                       </>
                     )}
                   </button>

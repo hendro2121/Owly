@@ -46,10 +46,9 @@ export default {
         },
       },
       fontFamily: {
-        // Mirrors the landing's --sans / --mono tokens exactly.
-        sans: ['PP Mori', 'Instrument Sans', 'system-ui', '-apple-system', 'sans-serif'],
+        sans: ['Outfit', 'system-ui', '-apple-system', 'sans-serif'],
         mono: ['Geist Mono', 'ui-monospace', 'monospace'],
-        display: ['PP Mori', 'Instrument Sans', 'system-ui', 'sans-serif'],
+        display: ['Outfit', 'system-ui', 'sans-serif'],
       },
       maxWidth: {
         page: '1200px',

@@ -16,9 +16,8 @@ import {
 } from "@/components/ui/table";
 import { dealColumns } from "./columns";
 
-/* Row heights follow the enterprise-table convention: condensed 40px for
-   scanning a lot of rows, regular 48px when you want breathing room. */
-const ROW_PAD = { compact: "py-2", regular: "py-3.5" };
+/* One compact height — enough for a 26px logo, small enough to fit a screenful. */
+const ROW_PAD = { compact: "py-[7px]", regular: "py-3" };
 
 export function DealsTable({ data, onRowClick, density = "compact", clusterTickers }) {
   const [sorting, setSorting] = useState([]);
@@ -40,12 +39,13 @@ export function DealsTable({ data, onRowClick, density = "compact", clusterTicke
   const pad = ROW_PAD[density] || ROW_PAD.regular;
 
   return (
-    <div className="flex h-full flex-col overflow-hidden rounded-xl border border-grey-200">
+    // A floating surface, not a boxed grid — soft elevation instead of hard borders.
+    <div className="flex h-full flex-col overflow-hidden rounded-2xl bg-white shadow-soft ring-1 ring-grey-900/5">
       <div className="min-h-0 flex-1 overflow-y-auto">
         <Table>
-          <TableHeader className="sticky top-0 z-10 bg-white">
+          <TableHeader className="sticky top-0 z-10 bg-white shadow-[0_1px_0_0_#F3F3F3]">
             {table.getHeaderGroups().map((hg) => (
-              <TableRow key={hg.id} className="border-b-2 border-grey-900 hover:bg-transparent">
+              <TableRow key={hg.id} className="border-none hover:bg-transparent">
                 {hg.headers.map((header) => {
                   const align = header.column.columnDef.meta?.align;
                   return (

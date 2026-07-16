@@ -8,13 +8,12 @@ import { CompaniesTab } from "./CompaniesTab";
 import { fmtCur } from "@/lib/format";
 import api from "@/api";
 
-/* Figures live in the chrome as a dense strip, not a grid of oversized cards —
-   the viewport belongs to the data. */
+/* Figures sit on the title line — sentence-case label, black number. */
 function Stat({ k, v, tone }) {
   return (
-    <div className="flex items-baseline gap-2">
-      <span className="font-mono text-[9px] uppercase tracking-[0.14em] text-grey-400">{k}</span>
-      <span className={`text-[13px] font-semibold tabular-nums ${tone || "text-grey-900"}`}>{v}</span>
+    <div className="flex flex-col items-end">
+      <span className={`text-[15px] font-semibold leading-tight tabular-nums ${tone || "text-grey-900"}`}>{v}</span>
+      <span className="text-[11px] text-grey-500">{k}</span>
     </div>
   );
 }
@@ -47,15 +46,14 @@ export function Dashboard({ go, setTicker, search }) {
 
   return (
     <div className="flex h-full flex-col overflow-hidden">
-      {/* Heading — given room to breathe, then a quiet rule. */}
-      <div className="shrink-0 px-6 pt-6 pb-4">
-        <h1 className="text-[19px] font-semibold tracking-[-0.02em] text-grey-900">Insider Trades</h1>
-        <div className="mt-3 flex flex-wrap items-center gap-x-7 gap-y-2">
+      {/* One title line: heading left, figures right. Nothing else. */}
+      <div className="flex shrink-0 flex-wrap items-center justify-between gap-3 px-6 pb-4 pt-6">
+        <h1 className="text-[21px] font-semibold tracking-[-0.02em] text-grey-900">Insider trades</h1>
+        <div className="flex items-center gap-7">
           <Stat k="Net flow" v={cur(bv - sv)} tone={bv - sv >= 0 ? "text-grey-900" : "text-sell"} />
-          <Stat k="Buy" v={cur(bv)} />
-          <Stat k="Sell" v={cur(sv)} tone="text-sell" />
+          <Stat k="Buys" v={cur(bv)} />
+          <Stat k="Sells" v={cur(sv)} tone="text-sell" />
           <Stat k="Clusters" v={String(clusterCount)} />
-          <span className="ml-auto font-mono text-[9px] uppercase tracking-[0.14em] text-grey-400">JSE · SENS</span>
         </div>
       </div>
 
