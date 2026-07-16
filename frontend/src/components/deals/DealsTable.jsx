@@ -40,8 +40,8 @@ export function DealsTable({ data, onRowClick, density = "compact", clusterTicke
   const pad = ROW_PAD[density] || ROW_PAD.regular;
 
   return (
-    <div className="overflow-hidden rounded-xl border border-grey-200">
-      <div className="max-h-[620px] overflow-y-auto">
+    <div className="flex h-full flex-col overflow-hidden rounded-xl border border-grey-200">
+      <div className="min-h-0 flex-1 overflow-y-auto">
         <Table>
           <TableHeader className="sticky top-0 z-10 bg-white">
             {table.getHeaderGroups().map((hg) => (

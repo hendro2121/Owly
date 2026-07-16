@@ -4,13 +4,9 @@ import {
 } from "lucide-react";
 import { OwlyLogo } from "@/components/shared/OwlyLogo";
 
-/* The application shell.
-
-   The app used to wear a marketing layout — a website nav bar over a centred
-   1200px column — which is why it read as a site rather than a tool. Investor
-   platforms are chrome + surface: a persistent sidebar you navigate by muscle
-   memory, a command bar you drive from the keyboard, and a full-bleed dense
-   workspace. This is that shell; pages render inside it full width. */
+/* The application shell: a quiet white sidebar, a command bar, and a workspace
+   that is exactly one viewport tall. Nothing here scrolls — only the data does,
+   inside its own surface. Chrome stays out of the way; the table is the product. */
 
 const NAV = [
   {
@@ -59,27 +55,27 @@ export function AppShell({ page, go, user, onLogout, search, onSearchChange, chi
   }, []);
 
   return (
-    <div className="flex min-h-screen bg-white">
+    <div className="flex h-screen overflow-hidden bg-white">
       {/* ── Sidebar ── */}
       <aside
-        className={`sticky top-0 hidden h-screen shrink-0 flex-col border-r border-grey-800 bg-grey-900 transition-all duration-200 md:flex ${
-          collapsed ? "w-[64px]" : "w-[216px]"
+        className={`hidden h-screen shrink-0 flex-col border-r border-grey-200 bg-white transition-all duration-200 md:flex ${
+          collapsed ? "w-[60px]" : "w-[208px]"
         }`}
       >
-        <div className="flex h-14 items-center gap-2 border-b border-grey-800 px-4">
+        <div className="flex h-14 shrink-0 items-center gap-2 px-4">
           <button
             onClick={() => go("landing")}
             className="flex cursor-pointer items-center gap-2 border-none bg-transparent p-0"
             title="Back to owly.co"
           >
-            <OwlyLogo size={20} />
-            {!collapsed && <span className="text-[15px] font-semibold text-white">Owly</span>}
+            <OwlyLogo size={19} />
+            {!collapsed && <span className="text-[15px] font-semibold tracking-tight text-grey-900">Owly</span>}
           </button>
           {!collapsed && (
             <button
               onClick={() => setCollapsed(true)}
-              title="Collapse sidebar"
-              className="ml-auto cursor-pointer border-none bg-transparent p-1 text-grey-500 hover:text-white"
+              title="Collapse"
+              className="ml-auto cursor-pointer border-none bg-transparent p-1 text-grey-300 hover:text-grey-600"
             >
               <PanelLeft className="h-4 w-4" />
             </button>
@@ -89,18 +85,18 @@ export function AppShell({ page, go, user, onLogout, search, onSearchChange, chi
         {collapsed && (
           <button
             onClick={() => setCollapsed(false)}
-            title="Expand sidebar"
-            className="mx-auto mt-2 cursor-pointer border-none bg-transparent p-1 text-grey-500 hover:text-white"
+            title="Expand"
+            className="mx-auto cursor-pointer border-none bg-transparent p-1 text-grey-300 hover:text-grey-600"
           >
             <PanelLeft className="h-4 w-4 rotate-180" />
           </button>
         )}
 
-        <nav className="flex-1 overflow-y-auto py-3">
+        <nav className="min-h-0 flex-1 overflow-y-auto pt-2">
           {NAV.map((group) => (
-            <div key={group.section} className="mb-4">
+            <div key={group.section} className="mb-6">
               {!collapsed && (
-                <div className="px-4 pb-1.5 font-mono text-[9.5px] font-medium uppercase tracking-[0.12em] text-grey-600">
+                <div className="px-4 pb-2 font-mono text-[9px] font-medium uppercase tracking-[0.14em] text-grey-400">
                   {group.section}
                 </div>
               )}
@@ -111,22 +107,19 @@ export function AppShell({ page, go, user, onLogout, search, onSearchChange, chi
                     key={item.id}
                     onClick={() => go(item.id)}
                     title={collapsed ? item.label : undefined}
-                    className={`flex w-full cursor-pointer items-center gap-2.5 border-none px-4 py-2 text-left text-[13px] transition-colors ${
+                    className={`relative flex w-full cursor-pointer items-center gap-2.5 border-none px-4 py-[7px] text-left text-[13px] transition-colors ${
                       active
-                        ? "bg-grey-800 font-medium text-lime-400"
-                        : "bg-transparent text-grey-400 hover:bg-grey-800/60 hover:text-white"
+                        ? "bg-lime-50 font-medium text-grey-900"
+                        : "bg-transparent text-grey-500 hover:bg-grey-50 hover:text-grey-900"
                     }`}
                   >
-                    <item.icon className="h-4 w-4 shrink-0" strokeWidth={2} />
+                    {active && <span className="absolute left-0 top-0 h-full w-[2px] bg-lime-400" />}
+                    <item.icon className="h-4 w-4 shrink-0" strokeWidth={1.9} />
                     {!collapsed && (
                       <>
                         <span className="truncate">{item.label}</span>
-                        {item.beta && (
-                          <span className="rounded bg-grey-800 px-1 py-0.5 font-mono text-[8px] font-bold uppercase text-grey-500">
-                            β
-                          </span>
-                        )}
-                        <span className="ml-auto font-mono text-[9px] text-grey-600">{item.kbd}</span>
+                        {item.beta && <span className="font-mono text-[8px] font-bold text-grey-300">β</span>}
+                        <span className="ml-auto font-mono text-[9px] text-grey-300">{item.kbd}</span>
                       </>
                     )}
                   </button>
@@ -137,13 +130,13 @@ export function AppShell({ page, go, user, onLogout, search, onSearchChange, chi
         </nav>
 
         {!collapsed && (
-          <div className="border-t border-grey-800 p-3">
+          <div className="shrink-0 border-t border-grey-100 p-3">
             {user ? (
               <div className="flex items-center gap-2">
                 <div className="min-w-0 flex-1">
-                  <div className="truncate font-mono text-[10px] text-grey-500">{user.email}</div>
+                  <div className="truncate font-mono text-[10px] text-grey-400">{user.email}</div>
                   {user.subscription_status === "active" && (
-                    <span className="mt-0.5 inline-block rounded bg-lime-400 px-1.5 py-0.5 font-mono text-[8px] font-bold text-grey-900">
+                    <span className="mt-1 inline-block rounded bg-lime-200 px-1.5 py-0.5 font-mono text-[8px] font-bold text-grey-900">
                       PRO
                     </span>
                   )}
@@ -151,7 +144,7 @@ export function AppShell({ page, go, user, onLogout, search, onSearchChange, chi
                 <button
                   onClick={onLogout}
                   title="Log out"
-                  className="cursor-pointer border-none bg-transparent p-1 text-grey-500 hover:text-white"
+                  className="cursor-pointer border-none bg-transparent p-1 text-grey-300 hover:text-grey-600"
                 >
                   <LogOut className="h-3.5 w-3.5" />
                 </button>
@@ -159,7 +152,7 @@ export function AppShell({ page, go, user, onLogout, search, onSearchChange, chi
             ) : (
               <button
                 onClick={() => go("login")}
-                className="w-full cursor-pointer rounded-lg border-none bg-lime-400 py-1.5 text-[12px] font-semibold text-grey-900 hover:bg-lime-300"
+                className="w-full cursor-pointer rounded-lg border-none bg-grey-900 py-1.5 text-[12px] font-semibold text-white hover:bg-grey-800"
               >
                 Log in
               </button>
@@ -169,9 +162,8 @@ export function AppShell({ page, go, user, onLogout, search, onSearchChange, chi
       </aside>
 
       {/* ── Main ── */}
-      <div className="flex min-w-0 flex-1 flex-col">
-        <header className="sticky top-0 z-30 flex h-14 shrink-0 items-center gap-3 border-b border-grey-200 bg-white/90 px-4 backdrop-blur-xl">
-          {/* mobile brand */}
+      <div className="flex min-w-0 flex-1 flex-col overflow-hidden">
+        <header className="flex h-14 shrink-0 items-center gap-3 border-b border-grey-100 px-5">
           <button
             onClick={() => go("dashboard")}
             className="flex cursor-pointer items-center gap-2 border-none bg-transparent md:hidden"
@@ -179,27 +171,28 @@ export function AppShell({ page, go, user, onLogout, search, onSearchChange, chi
             <OwlyLogo size={18} />
           </button>
 
-          <div className="relative flex max-w-[420px] flex-1 items-center">
-            <Search className="pointer-events-none absolute left-3 h-3.5 w-3.5 text-grey-400" strokeWidth={2.25} />
+          <div className="relative flex max-w-[380px] flex-1 items-center">
+            <Search className="pointer-events-none absolute left-3 h-3.5 w-3.5 text-grey-300" strokeWidth={2} />
             <input
               ref={searchRef}
               value={search ?? ""}
               onChange={(e) => onSearchChange?.(e.target.value)}
               placeholder="Search a company, ticker or director…"
-              className="h-9 w-full rounded-lg border border-grey-200 bg-grey-50 pl-9 pr-9 text-[13px] text-grey-900 outline-none transition-colors placeholder:text-grey-400 focus:border-grey-300 focus:bg-white"
+              className="h-8 w-full rounded-lg border border-grey-200 bg-white pl-9 pr-8 text-[13px] text-grey-900 outline-none transition-colors placeholder:text-grey-400 focus:border-grey-400"
             />
-            <kbd className="pointer-events-none absolute right-3 rounded border border-grey-200 bg-white px-1.5 font-mono text-[10px] text-grey-400">
+            <kbd className="pointer-events-none absolute right-2.5 rounded border border-grey-200 px-1.5 font-mono text-[10px] text-grey-300">
               /
             </kbd>
           </div>
 
           <span className="ml-auto flex items-center gap-1.5">
             <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-lime-400" />
-            <span className="font-mono text-[10px] uppercase tracking-widest text-grey-400">Live</span>
+            <span className="font-mono text-[9px] uppercase tracking-[0.14em] text-grey-400">Live</span>
           </span>
         </header>
 
-        <main className="min-w-0 flex-1">{children}</main>
+        {/* One viewport tall. Only the data surface inside scrolls. */}
+        <main className="min-h-0 min-w-0 flex-1 overflow-hidden">{children}</main>
       </div>
     </div>
   );

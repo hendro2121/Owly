@@ -85,7 +85,7 @@ export function FeedTab({ deals, onDealClick, search = "" }) {
   };
 
   return (
-    <div>
+    <div className="flex h-full flex-col">
       <DealsToolbar
         typeFilter={tf} onTypeChange={setTf}
         minValue={mv} onMinValueChange={setMv}
@@ -97,12 +97,15 @@ export function FeedTab({ deals, onDealClick, search = "" }) {
         onExport={exportCsv}
         count={filtered.length}
       />
-      <DealsTable
-        data={filtered}
-        onRowClick={onDealClick}
-        density={density}
-        clusterTickers={clusterTickers}
-      />
+      {/* Takes whatever height is left — the rows scroll, the page never does. */}
+      <div className="min-h-0 flex-1">
+        <DealsTable
+          data={filtered}
+          onRowClick={onDealClick}
+          density={density}
+          clusterTickers={clusterTickers}
+        />
+      </div>
     </div>
   );
 }
