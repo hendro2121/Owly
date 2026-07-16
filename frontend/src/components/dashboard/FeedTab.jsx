@@ -22,9 +22,8 @@ function toCsv(rows) {
   return [CSV_COLS.join(","), ...rows.map((r) => CSV_COLS.map((c) => esc(r[c])).join(","))].join("\n");
 }
 
-export function FeedTab({ deals, onDealClick }) {
+export function FeedTab({ deals, onDealClick, search = "" }) {
   const [tf, setTf] = useState("All");
-  const [q, setQ] = useState("");
   const [mv, setMv] = useState(0);
   const [period, setPeriod] = useState("All");
   const [openMarketOnly, setOpenMarketOnly] = useState(false);
@@ -50,14 +49,14 @@ export function FeedTab({ deals, onDealClick }) {
     if (t.ticker && (/^\d/.test(t.ticker) || (/\d$/.test(t.ticker) && t.ticker.length >= 4))) return false;
     if (tf !== "All" && t.transaction_type !== tf) return false;
     if (openMarketOnly && NON_DISCRETIONARY.has(t.transaction_type)) return false;
-    if (q) {
-      const s = q.toLowerCase();
+    if (search) {
+      const s = search.toLowerCase();
       if (![t.company, t.ticker, t.director].some((x) => (x || "").toLowerCase().includes(s))) return false;
     }
     if (t.value < mv) return false;
     if (cutoff && new Date(t.transaction_date) < cutoff) return false;
     return true;
-  }), [deals, tf, q, mv, cutoff, openMarketOnly]);
+  }), [deals, tf, search, mv, cutoff, openMarketOnly]);
 
   // A cluster = a company several *different* insiders traded in this window.
   const clusterTickers = useMemo(() => {
@@ -88,7 +87,6 @@ export function FeedTab({ deals, onDealClick }) {
   return (
     <div>
       <DealsToolbar
-        search={q} onSearchChange={setQ}
         typeFilter={tf} onTypeChange={setTf}
         minValue={mv} onMinValueChange={setMv}
         period={period} onPeriodChange={setPeriod}

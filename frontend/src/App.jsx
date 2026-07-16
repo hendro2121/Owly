@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Nav } from "@/components/layout/Nav";
+import { AppShell } from "@/components/layout/AppShell";
 import { Dashboard } from "@/components/dashboard/Dashboard";
 import { MovementsDashboard } from "@/components/dashboard/MovementsDashboard";
 import { SuperinvestorsDashboard } from "@/components/dashboard/SuperinvestorsDashboard";
@@ -29,6 +29,9 @@ export default function App() {
   const [ticker, setTicker] = useState(null);
   const [user, setUser] = useState(null);
   const [authLoading, setAuthLoading] = useState(true);
+  // One global search, owned by the shell's command bar and consumed by the
+  // screen you're on — rather than a second search box inside every toolbar.
+  const [query, setQuery] = useState("");
 
   // "landing" is no longer a React page — send those links to the static one.
   const go = (p) => {
@@ -68,12 +71,16 @@ export default function App() {
 
   return (
     <WatchlistProvider user={user} go={go}>
-      <div className="min-h-screen bg-white">
-        <Nav page={page} go={go} user={user} onLogout={handleLogout} />
-        {/* The deals workbench IS the dashboard — "dashboard" and "deals" both
-            land here so every existing link and the landing CTA keep working. */}
+      <AppShell
+        page={page}
+        go={go}
+        user={user}
+        onLogout={handleLogout}
+        search={query}
+        onSearchChange={setQuery}
+      >
         {(page === "dashboard" || page === "deals") && (
-          <Dashboard go={go} setTicker={setTicker} user={user} isPro={isPro} />
+          <Dashboard go={go} setTicker={setTicker} user={user} isPro={isPro} search={query} />
         )}
         {page === "movements" && <MovementsDashboard go={go} />}
         {page === "superinvestors" && <SuperinvestorsDashboard go={go} />}
@@ -85,7 +92,7 @@ export default function App() {
         )}
         {page === "pricing" && <PricingPage go={go} user={user} />}
         {page === "login" && <AuthPage go={go} setUser={setUser} />}
-      </div>
+      </AppShell>
     </WatchlistProvider>
   );
 }

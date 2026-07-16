@@ -1,5 +1,4 @@
-import { Search, Download, Zap, Users } from "lucide-react";
-import { Input } from "@/components/ui/input";
+import { Download, Zap, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 const typePills = [
@@ -21,7 +20,6 @@ const valuePills = [
 const periodPills = ["1W", "1M", "3M", "6M", "YTD", "1Y", "All"];
 
 export function DealsToolbar({
-  search, onSearchChange,
   typeFilter, onTypeChange,
   minValue, onMinValueChange,
   period, onPeriodChange,
@@ -33,17 +31,6 @@ export function DealsToolbar({
 }) {
   return (
     <div className="mb-4 flex flex-wrap items-center gap-1.5">
-      {/* Search */}
-      <div className="relative">
-        <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-grey-400" />
-        <Input
-          value={search}
-          onChange={(e) => onSearchChange(e.target.value)}
-          placeholder="Search..."
-          className="h-8 w-[200px] pl-9 text-sm"
-        />
-      </div>
-
       {/* ── Signal filters ──
           The two that actually separate signal from noise: discretionary
           open-market trades, and companies where several insiders moved. */}
