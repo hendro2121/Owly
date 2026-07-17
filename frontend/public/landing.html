@@ -455,6 +455,26 @@ footer{margin-top:clamp(64px,8vw,104px);border-top:1px solid var(--line)}
   .in .bbar i{width:var(--w)}
   .out-row,.out-sig{opacity:1;transform:none}
 }
+
+/* ── Overrides: product cards matched to the app dashboard (3D kept) ────── */
+.glass-stage{background:radial-gradient(55% 45% at 28% 22%,rgba(255,255,255,.9),transparent 70%),radial-gradient(40% 36% at 78% 74%,rgba(255,255,255,.5),transparent 70%),#E6E8E2}
+.widget{background:#FFFFFF;color:var(--grey-900);backdrop-filter:none;-webkit-backdrop-filter:none;border:1px solid rgba(10,10,10,.05);box-shadow:0 2px 8px -2px rgba(30,35,25,.06),0 22px 48px -18px rgba(30,40,25,.22)}
+.w-ic{background:var(--grey-900);color:#FFFFFF}
+.widget .mini{background:var(--grey-50);border:1px solid var(--grey-200)}
+.widget .mini .tk{font-family:var(--sans);font-weight:600;font-size:12px;color:var(--grey-900)}
+.widget .mini .chg{font-family:var(--sans);font-weight:600;font-size:11px;color:var(--lime-600)}
+.widget .mini .chg.down{color:var(--sell)}
+.widget .list{border:1px solid var(--grey-100)}
+.widget .list-row{border-bottom:1px solid var(--grey-100);font-size:12px;color:var(--grey-900)}
+.widget .list-row .tk{font-family:var(--sans);font-weight:600}
+.widget .list-row .who{color:var(--grey-500)}
+.widget .list-row .val{font-family:var(--sans);font-weight:600;color:var(--grey-900)}
+.widget .tag{font-family:var(--sans);font-size:10px;font-weight:600;letter-spacing:0}
+.widget .tag.up{background:var(--lime-300);color:var(--grey-900)}
+.widget .k,.widget .w-k,.widget .lbl{font-family:var(--sans);text-transform:none;letter-spacing:0;color:var(--grey-400)}
+/* Coverage: no dark blobs over the table — a frosted edge halo and a normal soft shadow. */
+.frost-stage::before{background:rgba(255,255,255,.6);inset:-18px;border-radius:34px;filter:blur(24px);z-index:-1}
+.cov-table{box-shadow:0 2px 10px -2px rgba(30,35,25,.06),0 24px 56px -22px rgba(30,40,25,.22);border:1px solid rgba(10,10,10,.06)}
 </style>
 </head>
 <body>

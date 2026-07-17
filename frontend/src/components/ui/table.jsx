@@ -32,7 +32,7 @@ const TableHead = forwardRef(({ className, ...props }, ref) => (
   <th
     ref={ref}
     className={cn(
-      "h-10 px-3 text-left align-middle text-[12px] font-medium text-grey-500",
+      "h-9 px-3 text-left align-middle text-[11.5px] font-medium text-grey-500",
       className
     )}
     {...props}

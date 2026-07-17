@@ -32,7 +32,7 @@ function SortHeader({ column, right, children }) {
 function TypeCell({ type }) {
   if (isNonDiscretionary(type)) {
     return (
-      <span className="inline-flex items-center rounded-md bg-grey-100 px-2 py-0.5 text-[11px] font-medium text-grey-600">
+      <span className="inline-flex items-center rounded-md bg-grey-100 px-1.5 py-0.5 text-[10.5px] font-medium text-grey-600">
         {typeLabel(type)}
       </span>
     );
@@ -40,7 +40,7 @@ function TypeCell({ type }) {
   const buy = type === "Buy";
   return (
     <span
-      className={`inline-flex items-center gap-1 rounded-md px-2 py-0.5 text-[11px] font-semibold ${
+      className={`inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 text-[10.5px] font-semibold ${
         buy ? "bg-lime-300 text-grey-900" : "bg-sell-bg text-sell"
       }`}
     >
@@ -54,9 +54,9 @@ export const dealColumns = [
   col.accessor("transaction_date", {
     header: ({ column }) => <SortHeader column={column}>Date</SortHeader>,
     cell: (info) => (
-      <span className="whitespace-nowrap text-[12.5px] text-grey-500 tabular-nums">{fmt.d(info.getValue())}</span>
+      <span className="whitespace-nowrap text-[11.5px] text-grey-500 tabular-nums">{fmt.d(info.getValue())}</span>
     ),
-    size: 92,
+    size: 78,
   }),
 
   col.accessor("ticker", {
@@ -65,43 +65,43 @@ export const dealColumns = [
       const d = info.row.original;
       return (
         <div className="flex min-w-0 items-center gap-2.5">
-          <CompanyLogo ticker={d.ticker} name={d.company} size={26} className="rounded-full ring-1 ring-grey-900/5" />
-          <span className="text-[13px] font-semibold text-grey-900">{d.ticker}</span>
-          <span className="truncate text-[12.5px] text-grey-500">{titleIfShouty(d.company)}</span>
+          <CompanyLogo ticker={d.ticker} name={d.company} size={22} className="rounded-full ring-1 ring-grey-900/5" />
+          <span className="text-[12.5px] font-semibold text-grey-900">{d.ticker}</span>
+          <span className="truncate text-[11.5px] text-grey-500">{titleIfShouty(d.company)}</span>
         </div>
       );
     },
-    size: 230,
+    size: 200,
   }),
 
   col.accessor("director", {
     header: "Director",
     cell: (info) => (
-      <span className="block truncate text-[13px] text-grey-900">{titleIfShouty(info.getValue())}</span>
+      <span className="block truncate text-[12.5px] text-grey-900">{titleIfShouty(info.getValue())}</span>
     ),
-    size: 160,
+    size: 146,
   }),
 
   col.accessor("role", {
     header: "Role",
     cell: (info) => (
-      <span className="block truncate text-[12.5px] text-grey-700">{info.getValue() || "—"}</span>
+      <span className="block truncate text-[11.5px] text-grey-700">{info.getValue() || "—"}</span>
     ),
-    size: 120,
+    size: 108,
     meta: { responsive: "hidden md:table-cell" },
   }),
 
   col.accessor("transaction_type", {
     header: "Type",
     cell: (info) => <TypeCell type={info.getValue()} />,
-    size: 92,
+    size: 84,
     filterFn: "equals",
   }),
 
   col.accessor("shares", {
     header: ({ column }) => <SortHeader column={column} right>Shares</SortHeader>,
-    cell: (info) => <span className="text-[12.5px] text-grey-700 tabular-nums">{fmt.num(info.getValue())}</span>,
-    size: 84,
+    cell: (info) => <span className="text-[11.5px] text-grey-700 tabular-nums">{fmt.num(info.getValue())}</span>,
+    size: 76,
     meta: { align: "right", responsive: "hidden xl:table-cell" },
   }),
 
@@ -111,12 +111,12 @@ export const dealColumns = [
       const d = info.row.original;
       const v = info.getValue();
       return (
-        <span className="text-[12.5px] text-grey-700 tabular-nums">
+        <span className="text-[11.5px] text-grey-700 tabular-nums">
           {v != null ? curSymbol(d.currency || "ZAR") + Number(v).toFixed(2) : "—"}
         </span>
       );
     },
-    size: 82,
+    size: 74,
     meta: { align: "right", responsive: "hidden lg:table-cell" },
   }),
 
@@ -126,12 +126,12 @@ export const dealColumns = [
       const d = info.row.original;
       const sell = d.transaction_type === "Sell";
       return (
-        <span className={`text-[13px] font-semibold tabular-nums ${sell ? "text-sell" : "text-grey-900"}`}>
+        <span className={`text-[12.5px] font-semibold tabular-nums ${sell ? "text-sell" : "text-grey-900"}`}>
           {fmtCur(d.value, d.market || "JSE", d.currency)}
         </span>
       );
     },
-    size: 104,
+    size: 94,
     meta: { align: "right" },
     sortingFn: "basic",
   }),
@@ -141,7 +141,7 @@ export const dealColumns = [
     header: "",
     cell: (info) =>
       info.row.original.source_url ? <SensButton id={info.row.original.id} /> : null,
-    size: 56,
+    size: 48,
     enableResizing: false,
   }),
 ];

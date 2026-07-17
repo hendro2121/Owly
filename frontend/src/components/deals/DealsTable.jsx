@@ -88,7 +88,7 @@ export function DealsTable({ data, onRowClick }) {
                       <TableCell
                         key={cell.id}
                         style={{ width: cell.column.getSize() }}
-                        className={`py-[7px] ${meta.align === "right" ? "text-right" : ""} ${meta.responsive || ""}`}
+                        className={`py-[5px] ${meta.align === "right" ? "text-right" : ""} ${meta.responsive || ""}`}
                       >
                         {flexRender(cell.column.columnDef.cell, cell.getContext())}
                       </TableCell>
