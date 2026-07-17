@@ -476,22 +476,21 @@ footer{margin-top:clamp(64px,8vw,104px);border-top:1px solid var(--line)}
 .frost-stage::before{background:rgba(255,255,255,.6);inset:-18px;border-radius:34px;filter:blur(24px);z-index:-1}
 .cov-table{box-shadow:0 2px 10px -2px rgba(30,35,25,.06),0 24px 56px -22px rgba(30,40,25,.22);border:1px solid rgba(10,10,10,.06)}
 
-/* ── Coverage v4: sage frost — even, light scene; no dark fades ── */
-.frost-stage::before{background:
-  radial-gradient(70% 65% at 50% 12%, rgba(255,255,255,.9), transparent 75%),
-  radial-gradient(46% 56% at 12% 88%, rgba(213,224,201,.6), transparent 72%),
-  radial-gradient(46% 56% at 88% 88%, rgba(213,224,201,.6), transparent 72%);
-  inset:-28px;border-radius:44px;filter:blur(30px);z-index:-1}
-.cov-table{background:rgba(232,237,225,.42);
-  backdrop-filter:blur(18px) saturate(1.2);-webkit-backdrop-filter:blur(18px) saturate(1.2);
-  border:1px solid rgba(255,255,255,.72);
-  box-shadow:inset 0 1px 0 rgba(255,255,255,.9),0 18px 44px -18px rgba(25,30,22,.26);
+/* ── Coverage v5: liquid glass — smooth diagonal wash (scale-independent), material layers on the card ── */
+.frost-stage::before{background:linear-gradient(135deg,#FBFBFA 0%,#E6E8E3 34%,#D8DBD4 66%,#F2F3F0 100%);
+  inset:-26px;border-radius:44px;filter:blur(18px);z-index:-1}
+.cov-table{background:rgba(255,255,255,.17);
+  backdrop-filter:blur(24px) saturate(1.15);-webkit-backdrop-filter:blur(24px) saturate(1.15);
+  border:1px solid rgba(255,255,255,.6);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.85),inset 0 -1px 0 rgba(255,255,255,.2),0 18px 44px -18px rgba(22,24,20,.32);
   transition:transform .35s cubic-bezier(.22,1,.36,1),box-shadow .35s cubic-bezier(.22,1,.36,1)}
+.cov-table::after{content:"";position:absolute;top:-40%;left:-14%;width:44%;height:190%;transform:rotate(24deg);
+  background:linear-gradient(90deg,transparent,rgba(255,255,255,.26),transparent);pointer-events:none}
 .frost-stage:hover .cov-table{transform:translateY(-4px);
-  box-shadow:inset 0 1px 0 rgba(255,255,255,.95),0 34px 78px -26px rgba(25,30,22,.32)}
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.9),inset 0 -1px 0 rgba(255,255,255,.25),0 36px 82px -28px rgba(22,24,20,.38)}
 .cov-row{border-bottom:1px solid rgba(10,10,10,.05)}
-.cov-row:hover{background:rgba(255,255,255,.45)}
-.cov-thead{background:rgba(255,255,255,.26)}
+.cov-row:hover{background:rgba(255,255,255,.42)}
+.cov-thead{background:rgba(255,255,255,.24)}
 </style>
 </head>
 <body>
