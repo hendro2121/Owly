@@ -476,23 +476,25 @@ footer{margin-top:clamp(64px,8vw,104px);border-top:1px solid var(--line)}
 .frost-stage::before{background:rgba(255,255,255,.6);inset:-18px;border-radius:34px;filter:blur(24px);z-index:-1}
 .cov-table{box-shadow:0 2px 10px -2px rgba(30,35,25,.06),0 24px 56px -22px rgba(30,40,25,.22);border:1px solid rgba(10,10,10,.06)}
 
-/* ── Coverage v2: frosted glass over colour, specular edge, soft 3D lift ── */
+/* ── Coverage v3: liquid glass — neutral scene, ultra-clear, light streak ── */
 .frost-stage::before{background:
-  radial-gradient(38% 46% at 12% 18%, rgba(212,240,0,.42), transparent 70%),
-  radial-gradient(30% 40% at 88% 20%, rgba(213,224,201,.95), transparent 72%),
-  radial-gradient(36% 44% at 80% 88%, rgba(212,240,0,.28), transparent 70%),
-  radial-gradient(26% 34% at 26% 92%, rgba(13,79,79,.16), transparent 72%);
-  inset:-30px;border-radius:44px;filter:blur(32px);z-index:-1}
-.cov-table{background:rgba(255,255,255,.44);
-  backdrop-filter:blur(18px) saturate(1.6);-webkit-backdrop-filter:blur(18px) saturate(1.6);
-  border:1px solid rgba(255,255,255,.7);
-  box-shadow:inset 0 1px 0 rgba(255,255,255,.9),0 2px 10px -2px rgba(30,35,25,.08),0 30px 70px -28px rgba(30,40,25,.32);
+  radial-gradient(42% 52% at 14% 16%, rgba(255,255,255,.95), transparent 70%),
+  radial-gradient(34% 44% at 86% 24%, rgba(122,126,118,.38), transparent 72%),
+  radial-gradient(38% 46% at 78% 88%, rgba(150,152,146,.45), transparent 70%),
+  radial-gradient(26% 34% at 30% 92%, rgba(96,100,94,.3), transparent 72%);
+  inset:-30px;border-radius:44px;filter:blur(34px);z-index:-1}
+.cov-table{background:rgba(255,255,255,.16);
+  backdrop-filter:blur(26px) saturate(1.15);-webkit-backdrop-filter:blur(26px) saturate(1.15);
+  border:1px solid rgba(255,255,255,.55);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.8),inset -1px -1px 0 rgba(255,255,255,.25),0 20px 48px -20px rgba(20,22,18,.34);
   transition:transform .35s cubic-bezier(.22,1,.36,1),box-shadow .35s cubic-bezier(.22,1,.36,1)}
+.cov-table::after{content:"";position:absolute;top:-40%;left:-16%;width:46%;height:190%;transform:rotate(24deg);
+  background:linear-gradient(90deg,transparent,rgba(255,255,255,.28),transparent);pointer-events:none}
 .frost-stage:hover .cov-table{transform:translateY(-4px);
-  box-shadow:inset 0 1px 0 rgba(255,255,255,.95),0 4px 14px -2px rgba(30,35,25,.1),0 44px 92px -30px rgba(30,40,25,.38)}
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.9),inset -1px -1px 0 rgba(255,255,255,.3),0 44px 92px -30px rgba(20,22,18,.4)}
 .cov-row{border-bottom:1px solid rgba(10,10,10,.05)}
-.cov-row:hover{background:rgba(255,255,255,.55)}
-.cov-thead{background:rgba(255,255,255,.3)}
+.cov-row:hover{background:rgba(255,255,255,.4)}
+.cov-thead{background:rgba(255,255,255,.22)}
 </style>
 </head>
 <body>
