@@ -457,13 +457,13 @@ footer{margin-top:clamp(64px,8vw,104px);border-top:1px solid var(--line)}
 }
 
 /* ── Overrides: product cards matched to the app dashboard (3D kept) ────── */
-/* ── Big liquid glass on white: monochrome dot field, deep blur, luminous rim ── */
-.glass-stage{background-color:#FFFFFF;background-image:radial-gradient(circle,rgba(10,10,10,.15) 1px,transparent 1.4px);background-size:13px 13px}
-.widget{position:relative;overflow:hidden;border-radius:24px;background:linear-gradient(115deg,rgba(255,255,255,.42),rgba(255,255,255,.14) 55%,rgba(255,255,255,.3));color:var(--grey-900);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);border:1px solid rgba(10,10,10,.12);box-shadow:0 30px 60px -24px rgba(10,10,10,.35)}
-.widget::before{content:"";position:absolute;inset:0;border-radius:inherit;border:1.5px solid #FFFFFF;-webkit-mask-image:linear-gradient(135deg,#fff,transparent 52%);mask-image:linear-gradient(135deg,#fff,transparent 52%);pointer-events:none;z-index:2}
-.widget::after{content:"";position:absolute;top:-45%;left:-16%;width:46%;height:200%;transform:rotate(22deg);background:linear-gradient(90deg,transparent,rgba(255,255,255,.45),transparent);pointer-events:none}
+/* ── Big liquid glass, plain white page: no dots, no washes — the card carries the glass ── */
+.glass-stage{background:transparent}
+.widget{position:relative;overflow:hidden;border-radius:24px;background:linear-gradient(115deg,#FFFFFF 0%,#FAFAFA 42%,#F4F4F4 68%,#FCFCFC 100%);color:var(--grey-900);backdrop-filter:none;-webkit-backdrop-filter:none;border:1px solid rgba(10,10,10,.1);box-shadow:inset 0 1.5px 0 #FFFFFF,inset 0 -1px 0 rgba(10,10,10,.04),0 30px 60px -24px rgba(10,10,10,.3)}
+.widget::before{content:"";position:absolute;inset:0;border-radius:inherit;border:1.5px solid #FFFFFF;-webkit-mask-image:linear-gradient(135deg,#fff,transparent 55%);mask-image:linear-gradient(135deg,#fff,transparent 55%);pointer-events:none;z-index:2}
+.widget::after{content:"";position:absolute;top:-45%;left:-16%;width:46%;height:200%;transform:rotate(22deg);background:linear-gradient(90deg,transparent,rgba(255,255,255,.75),transparent);pointer-events:none}
 .w-ic{background:var(--grey-900);color:#FFFFFF}
-.widget .mini{background:rgba(255,255,255,.6);border:1px solid rgba(255,255,255,.85)}
+.widget .mini{background:rgba(255,255,255,.75);border:1px solid rgba(10,10,10,.08)}
 .widget .mini .tk{font-family:var(--sans);font-weight:600;font-size:12px;color:var(--grey-900)}
 .widget .mini .chg{font-family:var(--sans);font-weight:600;font-size:11px;color:var(--lime-600)}
 .widget .mini .chg.down{color:var(--sell)}
@@ -475,14 +475,14 @@ footer{margin-top:clamp(64px,8vw,104px);border-top:1px solid var(--line)}
 .widget .tag{font-family:var(--sans);font-size:10px;font-weight:600;letter-spacing:0}
 .widget .tag.up{background:var(--lime-300);color:var(--grey-900)}
 .widget .k,.widget .w-k,.widget .lbl{font-family:var(--sans);text-transform:none;letter-spacing:0;color:var(--grey-400)}
-.frost-stage::before{content:"";position:absolute;inset:-26px;border-radius:40px;background-color:#FFFFFF;background-image:radial-gradient(circle,rgba(10,10,10,.15) 1px,transparent 1.4px);background-size:13px 13px;filter:none;z-index:-1}
-.cov-table{border-radius:26px;background:linear-gradient(115deg,rgba(255,255,255,.4),rgba(255,255,255,.12) 55%,rgba(255,255,255,.28));backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);border:1px solid rgba(10,10,10,.12);box-shadow:0 30px 60px -24px rgba(10,10,10,.35);transition:transform .35s cubic-bezier(.22,1,.36,1),box-shadow .35s cubic-bezier(.22,1,.36,1)}
-.cov-table::before{content:"";position:absolute;inset:0;border-radius:inherit;border:1.5px solid #FFFFFF;-webkit-mask-image:linear-gradient(135deg,#fff,transparent 52%);mask-image:linear-gradient(135deg,#fff,transparent 52%);pointer-events:none;z-index:2}
-.cov-table::after{content:"";position:absolute;top:-45%;left:-16%;width:46%;height:200%;transform:rotate(22deg);background:linear-gradient(90deg,transparent,rgba(255,255,255,.45),transparent);pointer-events:none}
-.frost-stage:hover .cov-table{transform:translateY(-4px);box-shadow:0 40px 80px -28px rgba(10,10,10,.4)}
+.frost-stage::before{display:none}
+.cov-table{border-radius:26px;background:linear-gradient(115deg,#FFFFFF 0%,#FAFAFA 42%,#F4F4F4 68%,#FCFCFC 100%);backdrop-filter:none;-webkit-backdrop-filter:none;border:1px solid rgba(10,10,10,.1);box-shadow:inset 0 1.5px 0 #FFFFFF,inset 0 -1px 0 rgba(10,10,10,.04),0 30px 60px -24px rgba(10,10,10,.3);transition:transform .35s cubic-bezier(.22,1,.36,1),box-shadow .35s cubic-bezier(.22,1,.36,1)}
+.cov-table::before{content:"";position:absolute;inset:0;border-radius:inherit;border:1.5px solid #FFFFFF;-webkit-mask-image:linear-gradient(135deg,#fff,transparent 55%);mask-image:linear-gradient(135deg,#fff,transparent 55%);pointer-events:none;z-index:2}
+.cov-table::after{content:"";position:absolute;top:-45%;left:-16%;width:46%;height:200%;transform:rotate(22deg);background:linear-gradient(90deg,transparent,rgba(255,255,255,.75),transparent);pointer-events:none}
+.frost-stage:hover .cov-table{transform:translateY(-4px);box-shadow:inset 0 1.5px 0 #FFFFFF,inset 0 -1px 0 rgba(10,10,10,.04),0 40px 80px -28px rgba(10,10,10,.36)}
 .cov-row{border-bottom:1px solid rgba(10,10,10,.06)}
-.cov-row:hover{background:rgba(255,255,255,.5)}
-.cov-thead{background:rgba(255,255,255,.35)}
+.cov-row:hover{background:rgba(10,10,10,.025)}
+.cov-thead{background:rgba(10,10,10,.02)}
 </style>
 </head>
 <body>
