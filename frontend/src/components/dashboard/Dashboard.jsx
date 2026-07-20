@@ -75,7 +75,7 @@ export function Dashboard({ go, setTicker, search }) {
           </TabsContent>
 
           <TabsContent value="clusters" className="mt-0 min-h-0 flex-1 overflow-auto px-6 pb-6 pt-4">
-            <ClustersTab market={market} onCompanyClick={handleCompanyClick} />
+            <ClustersTab market={market} onCompanyClick={handleCompanyClick} search={search} />
           </TabsContent>
 
           <TabsContent value="sectors" className="mt-0 min-h-0 flex-1 overflow-auto px-6 pb-6 pt-4">
@@ -83,7 +83,7 @@ export function Dashboard({ go, setTicker, search }) {
           </TabsContent>
 
           <TabsContent value="companies" className="mt-0 min-h-0 flex-1 overflow-auto px-6 pb-6 pt-4">
-            <CompaniesTab market={market} onCompanyClick={handleCompanyClick} />
+            <CompaniesTab market={market} onCompanyClick={handleCompanyClick} search={search} />
           </TabsContent>
         </Tabs>
       )}
