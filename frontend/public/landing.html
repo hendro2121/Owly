@@ -505,6 +505,18 @@ footer{margin-top:clamp(64px,8vw,104px);border-top:1px solid var(--line)}
 .cov-row{border-bottom:1px solid rgba(10,10,10,.06)}
 .cov-row:hover{background:rgba(10,10,10,.025)}
 .cov-thead{background:rgba(10,10,10,.02)}
+
+/* ── CTA: full-bleed black band with the owl ── */
+.cta-band{background:#0A0A0A}
+.cta-band .cta-card{border-radius:0;box-shadow:none;background:transparent}
+.cta-card .cta-inner{display:flex;align-items:center;justify-content:space-between;gap:clamp(28px,6vw,72px);text-align:left}
+.cta-copy{max-width:56ch}
+.cta-copy .label-row{justify-content:flex-start}
+.cta-copy h2,.cta-copy p{text-align:left}
+.cta-copy .cta-btns{justify-content:flex-start}
+.cta-owl{flex:none;padding:clamp(30px,3.4vw,48px);background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.16);border-radius:26px;box-shadow:inset 0 1px 0 rgba(255,255,255,.12)}
+.cta-owl img{width:clamp(160px,18vw,220px);aspect-ratio:1;object-fit:contain;filter:invert(1) grayscale(1);display:block}
+@media(max-width:860px){.cta-card .cta-inner{flex-direction:column;text-align:center}.cta-copy .label-row,.cta-copy .cta-btns{justify-content:center}.cta-copy h2,.cta-copy p{text-align:center}}
 </style>
 </head>
 <body>
@@ -729,18 +741,21 @@ footer{margin-top:clamp(64px,8vw,104px);border-top:1px solid var(--line)}
 </section>
 
 <!-- ================= CTA ================= -->
-<section class="sec" style="padding-top:0;padding-bottom:0">
+<section class="sec cta-band" style="padding-top:0;padding-bottom:0">
   <div class="wrap">
     <div class="cta-card rv">
       <div class="cta-glow"></div>
       <div class="cta-inner">
-        <div class="label-row" style="justify-content:center"><span class="u" style="color:var(--lime)">Get started</span></div>
-        <h2>Follow the smart money.</h2>
-        <p>Spot insider conviction, leadership shifts and superinvestor moves — before the market does.</p>
-        <div class="cta-btns">
-          <a class="btn btn-ondark btn-lg" href="/app">Open dashboard <span class="arr">→</span></a>
-          <a class="btn btn-ondark2 btn-lg" href="/app?p=pricing">See pricing</a>
+        <div class="cta-copy">
+          <div class="label-row"><span class="u" style="color:var(--lime)">Get started</span></div>
+          <h2>Follow the smart money.</h2>
+          <p>Spot insider conviction, leadership shifts and superinvestor moves — before the market does.</p>
+          <div class="cta-btns">
+            <a class="btn btn-ondark btn-lg" href="/app">Open dashboard <span class="arr">→</span></a>
+            <a class="btn btn-ondark2 btn-lg" href="/app?p=pricing">See pricing</a>
+          </div>
         </div>
+        <div class="cta-owl"><img src="/owly-logo.png" alt="The Owly owl"></div>
       </div>
     </div>
   </div>
