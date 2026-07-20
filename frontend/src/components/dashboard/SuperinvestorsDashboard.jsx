@@ -116,7 +116,7 @@ const columns = [
   }),
   col.accessor("investor", {
     header: "Investor",
-    cell: (i) => <span className="block truncate text-[12.5px] font-semibold text-grey-900">{i.getValue()}</span>,
+    cell: (i) => <span className="block truncate text-[12.5px] text-grey-900">{i.getValue()}</span>,
     size: 180,
   }),
   col.accessor("ticker", {

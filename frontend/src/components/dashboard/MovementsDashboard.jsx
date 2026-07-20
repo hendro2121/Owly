@@ -126,7 +126,7 @@ const columns = [
   }),
   col.accessor("person", {
     header: "Person",
-    cell: (i) => <span className="block truncate text-[12.5px] font-semibold text-grey-900">{i.getValue()}</span>,
+    cell: (i) => <span className="block truncate text-[12.5px] text-grey-900">{i.getValue()}</span>,
     size: 120,
   }),
   col.accessor("role", {
