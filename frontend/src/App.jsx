@@ -82,8 +82,8 @@ export default function App() {
         {(page === "dashboard" || page === "deals") && (
           <Dashboard go={go} setTicker={setTicker} user={user} isPro={isPro} search={query} />
         )}
-        {page === "movements" && <MovementsDashboard go={go} />}
-        {page === "superinvestors" && <SuperinvestorsDashboard go={go} />}
+        {page === "movements" && <MovementsDashboard go={go} setTicker={setTicker} search={query} />}
+        {page === "superinvestors" && <SuperinvestorsDashboard go={go} setTicker={setTicker} search={query} />}
         {page === "insights" && <Insights go={go} />}
         {page === "post" && <Post go={go} />}
         {page === "watchlist" && <WatchlistPage go={go} user={user} setTicker={setTicker} />}
